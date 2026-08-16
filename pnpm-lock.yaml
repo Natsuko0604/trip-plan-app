@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/backend: {}
+
+  apps/frontend:
     dependencies:
       next:
         specifier: 16.3.1
@@ -42,6 +46,10 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+
+  packages/types: {}
+
+  packages/validation: {}
 
 packages:
 
