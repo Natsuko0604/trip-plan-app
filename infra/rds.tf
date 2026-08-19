@@ -34,10 +34,20 @@ resource "aws_security_group" "rds" {
   }
 }
 
-# Lambda SG → RDS SG の5432番だけ許可
+# RDS SG → Lambda SG の5432番だけ許可
 resource "aws_vpc_security_group_ingress_rule" "rds_from_lambda" {
   security_group_id            = aws_security_group.rds.id
   referenced_security_group_id = aws_security_group.lambda.id
+
+  ip_protocol = "tcp"
+  from_port   = 5432
+  to_port     = 5432
+}
+
+# Lambda SG → RDS SG の5432番だけ許可
+resource "aws_vpc_security_group_egress_rule" "lambda_to_rds" {
+  security_group_id            = aws_security_group.lambda.id
+  referenced_security_group_id = aws_security_group.rds.id
 
   ip_protocol = "tcp"
   from_port   = 5432
