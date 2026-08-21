@@ -20,3 +20,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ※ app/backend 内で実行する場合
 pnpm exec drizzle-kit generate
+
+## terraformに関するコマンド
+
+aws sso login --profile Natsuko

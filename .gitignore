@@ -45,3 +45,6 @@ next-env.d.ts
 */terraform.tfvars
 
 */*/node_modules
+
+# backend
+apps/backend/dist/lambda/*
