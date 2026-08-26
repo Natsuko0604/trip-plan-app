@@ -43,6 +43,7 @@ next-env.d.ts
 # terraform
 */.terraform
 */terraform.tfvars
+*/tfplan
 
 */*/node_modules
 
