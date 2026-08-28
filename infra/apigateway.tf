@@ -47,6 +47,27 @@ resource "aws_api_gateway_method" "plans_get" {
   authorization = "NONE"
 }
 
+// Integration設定
+resource "aws_api_gateway_integration" "plans_get_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.plans.id
+  http_method = aws_api_gateway_method.plans_get.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.hello.invoke_arn
+}
+
+// lambdaにapi gatewayの実行権限を追加
+resource "aws_lambda_permission" "allow_apigateway_plans_get" {
+  statement_id  = "AllowExecutionFromApiGatewayPlansGet"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.hello.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/GET/plans"
+}
+
 // self
 resource "aws_api_gateway_resource" "self" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -235,4 +256,30 @@ resource "aws_api_gateway_method" "plan_id_get" {
   resource_id   = aws_api_gateway_resource.plan_id.id
   http_method   = "GET"
   authorization = "NONE"
+}
+
+// API Gatewayの設定をデプロイして公開する
+resource "aws_api_gateway_deployment" "main" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_method.plans_get.id,
+      aws_api_gateway_integration.plans_get_lambda.id,
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.plans_get_lambda,
+  ]
+}
+
+resource "aws_api_gateway_stage" "dev" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  deployment_id = aws_api_gateway_deployment.main.id
+  stage_name    = "dev"
 }
