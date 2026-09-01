@@ -18,7 +18,7 @@ export const users = pgTable("users", {
 
   email: varchar("email", { length: 254 }).notNull().unique(),
 
-  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  cognitoSub: varchar("cognito_sub", { length: 255 }).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 
@@ -123,40 +123,37 @@ export type Favorite = typeof favorites.$inferSelect;
 export type NewFavorite = typeof favorites.$inferInsert;
 
 // Hotels
-export const hotels = pgTable(
-  "hotels",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
+export const hotels = pgTable("hotels", {
+  id: uuid("id").primaryKey().defaultRandom(),
 
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => plans.id),
+  planId: uuid("plan_id")
+    .notNull()
+    .references(() => plans.id),
 
-    name: varchar("name").notNull(),
-    address: varchar("address"),
-    phoneNumber: varchar("phone_number"),
+  name: varchar("name").notNull(),
+  address: varchar("address"),
+  phoneNumber: varchar("phone_number"),
 
-    checkInTime: time("check_in_time"),
-    checkoutTime: time("checkout_time"),
+  checkInTime: time("check_in_time"),
+  checkoutTime: time("checkout_time"),
 
-    dinnerStartedAt: time("dinner_started_at"),
-    dinnerEndedAt: time("dinner_ended_at"),
+  dinnerStartedAt: time("dinner_started_at"),
+  dinnerEndedAt: time("dinner_ended_at"),
 
-    breakfastStartedAt: time("breakfast_started_at"),
-    breakfastEndedAt: time("breakfast_ended_at"),
+  breakfastStartedAt: time("breakfast_started_at"),
+  breakfastEndedAt: time("breakfast_ended_at"),
 
-    bathStartedAt: time("bath_started_at"),
-    bathEndedAt: time("bath_ended_at"),
+  bathStartedAt: time("bath_started_at"),
+  bathEndedAt: time("bath_ended_at"),
 
-    notes: text("notes"),
+  notes: text("notes"),
 
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-);
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
 export type Hotel = typeof hotels.$inferSelect;
 export type NewHotel = typeof hotels.$inferInsert;
@@ -178,31 +175,28 @@ export type HotelImage = typeof hotelImages.$inferSelect;
 export type NewHotelImage = typeof hotelImages.$inferInsert;
 
 // TouringSpots
-export const touringSpots = pgTable(
-  "touring_spots",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
+export const touringSpots = pgTable("touring_spots", {
+  id: uuid("id").defaultRandom().primaryKey(),
 
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => plans.id),
+  planId: uuid("plan_id")
+    .notNull()
+    .references(() => plans.id),
 
-    name: varchar("name").notNull(),
-    address: varchar("address"),
-    phoneNumber: varchar("phone_number"),
+  name: varchar("name").notNull(),
+  address: varchar("address"),
+  phoneNumber: varchar("phone_number"),
 
-    openingTime: time("opening_time"),
-    closingTime: time("closing_time"),
+  openingTime: time("opening_time"),
+  closingTime: time("closing_time"),
 
-    notes: text("notes"),
+  notes: text("notes"),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-);
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
 export type TouringSpot = typeof touringSpots.$inferSelect;
 export type NewTouringSpot = typeof touringSpots.$inferInsert;
@@ -224,31 +218,28 @@ export type TouringSpotImage = typeof touringSpotImages.$inferSelect;
 export type NewTouringSpotImage = typeof touringSpotImages.$inferInsert;
 
 // Restaurants
-export const restaurants = pgTable(
-  "restaurants",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
+export const restaurants = pgTable("restaurants", {
+  id: uuid("id").defaultRandom().primaryKey(),
 
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => plans.id),
+  planId: uuid("plan_id")
+    .notNull()
+    .references(() => plans.id),
 
-    name: varchar("name").notNull(),
-    address: varchar("address"),
-    phoneNumber: varchar("phone_number"),
+  name: varchar("name").notNull(),
+  address: varchar("address"),
+  phoneNumber: varchar("phone_number"),
 
-    openingTime: time("opening_time"),
-    closingTime: time("closing_time"),
+  openingTime: time("opening_time"),
+  closingTime: time("closing_time"),
 
-    notes: text("notes"),
+  notes: text("notes"),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-);
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
 export type Restaurant = typeof restaurants.$inferSelect;
 export type NewRestaurant = typeof restaurants.$inferInsert;

@@ -15,6 +15,20 @@
       "when": 1787296716514,
       "tag": "0001_shocking_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788147650673,
+      "tag": "0002_lethal_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788162715912,
+      "tag": "0003_shocking_karma",
+      "breakpoints": true
     }
   ]
 }

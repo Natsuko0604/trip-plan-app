@@ -28,6 +28,56 @@ resource "aws_api_gateway_method" "signup_post" {
   authorization = "NONE"
 }
 
+# POST /signupをsignup_post Lambdaへ接続
+resource "aws_api_gateway_integration" "signup_post_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.signup.id
+  http_method = aws_api_gateway_method.signup_post.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["signup_post"].invoke_arn
+}
+
+# API Gatewayからsignup_post Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_signup_post" {
+  statement_id  = "AllowExecutionFromApiGatewaySignupPost"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["signup_post"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/POST/signup"
+}
+
+# signup OPTIONS
+resource "aws_api_gateway_method" "signup_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.signup.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# OPTIONS /signupをsignup_post Lambdaへ接続
+resource "aws_api_gateway_integration" "signup_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.signup.id
+  http_method = aws_api_gateway_method.signup_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["signup_post"].invoke_arn
+}
+
+# API GatewayのOPTIONSからsignup_post Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_signup_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySignupOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["signup_post"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/signup"
+}
+
 // plans
 resource "aws_api_gateway_resource" "plans" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -58,25 +108,6 @@ resource "aws_api_gateway_method" "plan_id_get" {
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
-
-// plans Integration設定
-# resource "aws_api_gateway_integration" "plans_get_lambda" {
-#   rest_api_id = aws_api_gateway_rest_api.main.id
-#   resource_id = aws_api_gateway_resource.plans.id
-#   http_method = aws_api_gateway_method.plans_get.http_method
-#   integration_http_method = "POST"
-#   type                    = "AWS_PROXY"
-#   uri                     = aws_lambda_function.hello.invoke_arn
-# }
-
-// plans lambdaにapi gatewayの実行権限を追加
-# resource "aws_lambda_permission" "allow_apigateway_plans_get" {
-#   statement_id  = "AllowExecutionFromApiGatewayPlansGet"
-#   action        = "lambda:InvokeFunction"
-#   function_name = aws_lambda_function.hello.function_name
-#   principal     = "apigateway.amazonaws.com"
-#   source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/GET/plans"
-# }
 
 // self
 resource "aws_api_gateway_resource" "self" {
@@ -111,7 +142,7 @@ resource "aws_api_gateway_resource" "self_plans" {
 }
 
 // self/plans POST
-resource "aws_api_gateway_method" "self_plans_get" {
+resource "aws_api_gateway_method" "self_plans_post" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
   resource_id   = aws_api_gateway_resource.self_plans.id
   http_method   = "POST"
@@ -131,7 +162,7 @@ resource "aws_api_gateway_method" "self_plans_get" {
 // self/plans/{plansId}
 resource "aws_api_gateway_resource" "self_plans_id" {
   rest_api_id = aws_api_gateway_rest_api.main.id
-  parent_id   = aws_api_gateway_resource.plans.id
+  parent_id   = aws_api_gateway_resource.self_plans.id
   path_part   = "{planId}"
 }
 
@@ -317,11 +348,22 @@ resource "aws_api_gateway_method" "self_memories_delete" {
 }
 
 // Terraformで 作成したAPI Gateway（REST API）の設定を「デプロイする」ためのリソース
-resource "aws_api_gateway_deployment" "main" {
+resource "aws_api_gateway_deployment" "current" {
   rest_api_id = aws_api_gateway_rest_api.main.id
 
-  // 本番用Lambda Integration完成後にtriggersとdepends_onを追加
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_method.signup_post.id,
+      aws_api_gateway_integration.signup_post_lambda.id,
+      aws_api_gateway_method.signup_options.id,
+      aws_api_gateway_integration.signup_options_lambda.id,
+    ]))
+  }
 
+  depends_on = [
+    aws_api_gateway_integration.signup_post_lambda,
+    aws_api_gateway_integration.signup_options_lambda,
+  ]
 
   lifecycle {
     create_before_destroy = true // 新しいDeploymentを作成してから古いものを削除
@@ -331,6 +373,6 @@ resource "aws_api_gateway_deployment" "main" {
 // dev環境として公開するリソース
 resource "aws_api_gateway_stage" "dev" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
-  deployment_id = aws_api_gateway_deployment.main.id
+  deployment_id = aws_api_gateway_deployment.current.id
   stage_name    = "dev"
 }

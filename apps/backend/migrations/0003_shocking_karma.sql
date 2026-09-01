@@ -1,0 +1,1 @@
+ALTER TABLE "users" RENAME COLUMN "password_sub" TO "cognito_sub";

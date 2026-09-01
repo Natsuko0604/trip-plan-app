@@ -2,14 +2,18 @@
   "name": "@tripla/backend",
   "private": true,
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1121.0",
+    "@aws-sdk/client-secrets-manager": "^3.1121.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.23.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.162",
     "@types/node": "^20.19.43",
     "@types/pg": "^8.21.0",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   }
 }
