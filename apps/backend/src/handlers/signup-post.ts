@@ -1,10 +1,10 @@
-import type { APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda";
+// 新規会員登録
+import type { APIGatewayProxyHandler } from "aws-lambda";
 
 import {
   AdminCreateUserCommand,
   AdminDeleteUserCommand,
   AdminSetUserPasswordCommand,
-  CognitoIdentityProviderClient,
   InvalidParameterException,
   InvalidPasswordException,
   TooManyRequestsException,
@@ -12,39 +12,9 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { getDb } from "../db/index.js";
 import { users } from "../db/schema.js";
-
-// Node.jsからAmazon Cognitoへ命令を送るためのクライアント
-const cognitoClient = new CognitoIdentityProviderClient({});
-
-// Lambdaの環境変数からCognito User PoolのIDを取得
-const userPoolId = process.env.COGNITO_USER_POOL_ID;
-
-// 環境ごとにCORSで許可するフロントエンドURLを切り替える
-const allowedOrigin = process.env.ALLOWED_ORIGIN ?? "http://localhost:3000";
-
-const CORS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": allowedOrigin,
-  "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  "Access-Control-Allow-Methods": "OPTIONS,POST",
-};
-
-// API Gatewayへ返すレスポンス形式を共通化
-function response(
-  statusCode: number,
-  body: Record<string, unknown>,
-): APIGatewayProxyResult {
-  return {
-    statusCode,
-    headers: CORS,
-    body: JSON.stringify(body),
-  };
-}
-
-// Error型ならエラー名を取得し、それ以外ならUnknownErrorを返す
-function errorName(error: unknown): string {
-  return error instanceof Error ? error.name : "UnknownError";
-}
+import { cognitoClient, userPoolId } from "../lib/cognito.js";
+import { CORS, response } from "../lib/cors.js";
+import { errorName } from "../lib/error.js";
 
 // パスワード設定やDB登録に失敗した場合、作成済みCognitoユーザーを削除
 async function deleteCognitoUser(email: string): Promise<void> {

@@ -150,6 +150,56 @@ resource "aws_api_gateway_method" "self_plans_post" {
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
+# POST /self/plansをself_plans_post Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_post_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans.id
+  http_method = aws_api_gateway_method.self_plans_post.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_post"].invoke_arn
+}
+
+# API Gatewayからself_plans_post Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_post" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansPost"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_post"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/POST/self/plans"
+}
+
+# self/plans OPTIONS
+resource "aws_api_gateway_method" "self_plans_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.self_plans.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# OPTIONS /self/plansをself_plans_post Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans.id
+  http_method = aws_api_gateway_method.self_plans_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_post"].invoke_arn
+}
+
+# API GatewayのOPTIONSからself_plans_post Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_post"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/plans"
+}
+
 // self/plans/ GET
 resource "aws_api_gateway_method" "self_plans_get" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
@@ -347,22 +397,172 @@ resource "aws_api_gateway_method" "self_memories_delete" {
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
+# Lambdaが未実装のAPIメソッドを一時的にMOCK Integrationへ接続
+locals {
+  unimplemented_api_methods = {
+    plans_get = {
+      resource_id = aws_api_gateway_resource.plans.id
+      http_method = aws_api_gateway_method.plans_get.http_method
+    }
+    plan_id_get = {
+      resource_id = aws_api_gateway_resource.plan_id.id
+      http_method = aws_api_gateway_method.plan_id_get.http_method
+    }
+    self_get = {
+      resource_id = aws_api_gateway_resource.self.id
+      http_method = aws_api_gateway_method.self_get.http_method
+    }
+    self_put = {
+      resource_id = aws_api_gateway_resource.self.id
+      http_method = aws_api_gateway_method.self_put.http_method
+    }
+    self_plans_get = {
+      resource_id = aws_api_gateway_resource.self_plans.id
+      http_method = aws_api_gateway_method.self_plans_get.http_method
+    }
+    self_plans_id_get = {
+      resource_id = aws_api_gateway_resource.self_plans_id.id
+      http_method = aws_api_gateway_method.self_plans_id_get.http_method
+    }
+    self_plans_id_put = {
+      resource_id = aws_api_gateway_resource.self_plans_id.id
+      http_method = aws_api_gateway_method.self_plans_id_put.http_method
+    }
+    self_plans_id_delete = {
+      resource_id = aws_api_gateway_resource.self_plans_id.id
+      http_method = aws_api_gateway_method.self_plans_id_delete.http_method
+    }
+    self_plans_id_timelines_put = {
+      resource_id = aws_api_gateway_resource.self_plans_id_timelines.id
+      http_method = aws_api_gateway_method.self_plans_id_timelines_put.http_method
+    }
+    self_plans_id_hotels_put = {
+      resource_id = aws_api_gateway_resource.self_plans_id_hotels.id
+      http_method = aws_api_gateway_method.self_plans_id_hotels_put.http_method
+    }
+    self_plans_id_restaurants_put = {
+      resource_id = aws_api_gateway_resource.self_plans_id_restaurants.id
+      http_method = aws_api_gateway_method.self_plans_id_restaurants_put.http_method
+    }
+    self_plans_id_touring_spots_put = {
+      resource_id = aws_api_gateway_resource.self_plans_id_touring_spots.id
+      http_method = aws_api_gateway_method.self_plans_id_touring_spots_put.http_method
+    }
+    self_plans_id_items_put = {
+      resource_id = aws_api_gateway_resource.self_plans_id_items.id
+      http_method = aws_api_gateway_method.self_plans_id_items_put.http_method
+    }
+    self_plans_id_favorites_post = {
+      resource_id = aws_api_gateway_resource.self_plans_id_favorites.id
+      http_method = aws_api_gateway_method.self_plans_id_favorites_post.http_method
+    }
+    self_plans_id_favorites_delete = {
+      resource_id = aws_api_gateway_resource.self_plans_id_favorites.id
+      http_method = aws_api_gateway_method.self_plans_id_favorites_delete.http_method
+    }
+    self_plans_favorites_get = {
+      resource_id = aws_api_gateway_resource.self_plans_favorites.id
+      http_method = aws_api_gateway_method.self_plans_favorites_get.http_method
+    }
+    self_memories_get = {
+      resource_id = aws_api_gateway_resource.self_memories.id
+      http_method = aws_api_gateway_method.self_memories_get.http_method
+    }
+    self_memories_post = {
+      resource_id = aws_api_gateway_resource.self_memories.id
+      http_method = aws_api_gateway_method.self_memories_post.http_method
+    }
+    self_memories_delete = {
+      resource_id = aws_api_gateway_resource.self_memories.id
+      http_method = aws_api_gateway_method.self_memories_delete.http_method
+    }
+  }
+}
+
+resource "aws_api_gateway_integration" "unimplemented_mock" {
+  for_each = local.unimplemented_api_methods
+
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = each.value.resource_id
+  http_method = each.value.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = jsonencode({ statusCode = 501 })
+  }
+}
+
+resource "aws_api_gateway_method_response" "unimplemented_mock" {
+  for_each = local.unimplemented_api_methods
+
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = each.value.resource_id
+  http_method = each.value.http_method
+  status_code = "501"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  response_parameters = {
+    "method.response.header.Content-Type" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "unimplemented_mock" {
+  for_each = local.unimplemented_api_methods
+
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = each.value.resource_id
+  http_method = aws_api_gateway_integration.unimplemented_mock[each.key].http_method
+  status_code = aws_api_gateway_method_response.unimplemented_mock[each.key].status_code
+
+  response_templates = {
+    "application/json" = jsonencode({ message = "未実装のAPIです" })
+  }
+
+  response_parameters = {
+    "method.response.header.Content-Type" = "'application/json'"
+  }
+}
+
 // Terraformで 作成したAPI Gateway（REST API）の設定を「デプロイする」ためのリソース
 resource "aws_api_gateway_deployment" "current" {
   rest_api_id = aws_api_gateway_rest_api.main.id
 
   triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_method.signup_post.id,
-      aws_api_gateway_integration.signup_post_lambda.id,
-      aws_api_gateway_method.signup_options.id,
-      aws_api_gateway_integration.signup_options_lambda.id,
-    ]))
+    redeployment = sha1(jsonencode({
+      lambda_integrations = [
+        aws_api_gateway_method.signup_post.id,
+        aws_api_gateway_integration.signup_post_lambda.id,
+        aws_api_gateway_method.signup_options.id,
+        aws_api_gateway_integration.signup_options_lambda.id,
+        aws_api_gateway_method.self_plans_post.id,
+        aws_api_gateway_integration.self_plans_post_lambda.id,
+        aws_api_gateway_method.self_plans_options.id,
+        aws_api_gateway_integration.self_plans_options_lambda.id,
+      ]
+      mock_integrations = [
+        for key in sort(keys(local.unimplemented_api_methods)) :
+        aws_api_gateway_integration.unimplemented_mock[key].id
+      ]
+      mock_method_responses = [
+        for key in sort(keys(local.unimplemented_api_methods)) :
+        aws_api_gateway_method_response.unimplemented_mock[key].id
+      ]
+      mock_integration_responses = [
+        for key in sort(keys(local.unimplemented_api_methods)) :
+        aws_api_gateway_integration_response.unimplemented_mock[key].id
+      ]
+    }))
   }
 
   depends_on = [
     aws_api_gateway_integration.signup_post_lambda,
     aws_api_gateway_integration.signup_options_lambda,
+    aws_api_gateway_integration.self_plans_post_lambda,
+    aws_api_gateway_integration.self_plans_options_lambda,
+    aws_api_gateway_integration_response.unimplemented_mock,
   ]
 
   lifecycle {

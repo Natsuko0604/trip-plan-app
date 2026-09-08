@@ -45,6 +45,51 @@ locals {
           Resource = aws_db_instance.main.master_user_secret[0].secret_arn
         },
       ]
+    },
+    self_plans_post = {
+      handler     = "self_plans_post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self_plans_post.js"
+      memory_size = 256
+      timeout     = 15
+
+      managed_policies = {
+        logs = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        vpc  = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      }
+
+      environment_variables = {
+        COGNITO_USER_POOL_ID = aws_cognito_user_pool.users.id
+        DB_SECRET_ARN        = aws_db_instance.main.master_user_secret[0].secret_arn
+        DB_HOST              = aws_db_instance.main.address
+        DB_PORT              = tostring(aws_db_instance.main.port)
+        DB_NAME              = aws_db_instance.main.db_name
+      }
+
+      subnet_ids = [
+        aws_subnet.private_1.id,
+        aws_subnet.private_2.id,
+      ]
+
+      security_group_ids = [
+        aws_security_group.lambda.id,
+      ]
+
+      inline_statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "cognito-idp:AdminCreateUser",
+            "cognito-idp:AdminSetUserPassword",
+            "cognito-idp:AdminDeleteUser",
+          ]
+          Resource = aws_cognito_user_pool.users.arn
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:GetSecretValue"]
+          Resource = aws_db_instance.main.master_user_secret[0].secret_arn
+        },
+      ]
     }
   }
 
