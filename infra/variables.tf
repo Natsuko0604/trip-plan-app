@@ -9,3 +9,9 @@ variable "aws_profile" {
   type        = string
   default     = "trip-plan-terraform"
 }
+
+variable "allowed_origin" {
+  description = "CORSで許可するフロントエンドのOrigin"
+  type        = string
+  default     = "http://localhost:3000"
+}

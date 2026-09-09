@@ -134,6 +134,73 @@ resource "aws_api_gateway_method" "self_put" {
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
+// self/images
+resource "aws_api_gateway_resource" "self_images" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.self.id
+  path_part   = "images"
+}
+
+// self/images/upload-url
+resource "aws_api_gateway_resource" "self_images_upload_url" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.self_images.id
+  path_part   = "upload-url"
+}
+
+resource "aws_api_gateway_method" "self_images_upload_url_post" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.self_images_upload_url.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+resource "aws_api_gateway_integration" "self_images_upload_url_post_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_images_upload_url.id
+  http_method = aws_api_gateway_method.self_images_upload_url_post.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["image_upload_url_post"].invoke_arn
+}
+
+resource "aws_lambda_permission" "allow_apigateway_self_images_upload_url_post" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfImagesUploadUrlPost"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["image_upload_url_post"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/POST/self/images/upload-url"
+}
+
+resource "aws_api_gateway_method" "self_images_upload_url_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.self_images_upload_url.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "self_images_upload_url_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_images_upload_url.id
+  http_method = aws_api_gateway_method.self_images_upload_url_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["image_upload_url_post"].invoke_arn
+}
+
+resource "aws_lambda_permission" "allow_apigateway_self_images_upload_url_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfImagesUploadUrlOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["image_upload_url_post"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/images/upload-url"
+}
+
 // self/plans
 resource "aws_api_gateway_resource" "self_plans" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -541,6 +608,10 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.self_plans_post_lambda.id,
         aws_api_gateway_method.self_plans_options.id,
         aws_api_gateway_integration.self_plans_options_lambda.id,
+        aws_api_gateway_method.self_images_upload_url_post.id,
+        aws_api_gateway_integration.self_images_upload_url_post_lambda.id,
+        aws_api_gateway_method.self_images_upload_url_options.id,
+        aws_api_gateway_integration.self_images_upload_url_options_lambda.id,
       ]
       mock_integrations = [
         for key in sort(keys(local.unimplemented_api_methods)) :
@@ -562,6 +633,8 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.signup_options_lambda,
     aws_api_gateway_integration.self_plans_post_lambda,
     aws_api_gateway_integration.self_plans_options_lambda,
+    aws_api_gateway_integration.self_images_upload_url_post_lambda,
+    aws_api_gateway_integration.self_images_upload_url_options_lambda,
     aws_api_gateway_integration_response.unimplemented_mock,
   ]
 

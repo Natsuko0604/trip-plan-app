@@ -1,9 +1,18 @@
 {
   "name": "@tripla/backend",
   "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:lambda:signup": "esbuild src/handlers/signup-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/signup_post.js",
+    "build:lambda:self-plans": "esbuild src/handlers/self-plans-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/self_plans_post.js",
+    "build:lambda:image-upload-url": "esbuild src/handlers/image-upload-url-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/image_upload_url_post.js",
+    "build:lambdas": "pnpm run build:lambda:signup && pnpm run build:lambda:self-plans && pnpm run build:lambda:image-upload-url"
+  },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1121.0",
+    "@aws-sdk/client-s3": "^3.1127.0",
     "@aws-sdk/client-secrets-manager": "^3.1121.0",
+    "@aws-sdk/s3-presigned-post": "^3.1127.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.23.0"

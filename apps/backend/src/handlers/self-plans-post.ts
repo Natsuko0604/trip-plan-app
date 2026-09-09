@@ -1,10 +1,16 @@
 // 旅行計画作成
-import { APIGatewayProxyHandler } from "aws-lambda";
-import { CORS, response } from "../lib/cors";
-import { plans, users } from "../db/schema";
-import { getDb } from "../db";
+import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { eq } from "drizzle-orm";
-import { errorName } from "../lib/error";
+import type { APIGatewayProxyHandler } from "aws-lambda";
+import { getDb } from "../db/index.js";
+import { plans, users } from "../db/schema.js";
+import { CORS, response } from "../lib/cors.js";
+import { errorName } from "../lib/error.js";
+import { imageKeyFromUrl } from "../lib/images.js";
+
+const s3Client = new S3Client({});
+const imageBucket = process.env.IMAGE_BUCKET;
+const imageBucketRegion = process.env.IMAGE_BUCKET_REGION;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const requestId = event.requestContext.requestId;
@@ -50,7 +56,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   // リクエストの型を確認するため
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const isPublic = typeof body.isPublic === "boolean" ? body.isPublic : false;
-  const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl : null;
+  const requestedImageUrl =
+    typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+  const imageUrl = requestedImageUrl || null;
 
   if (!title) {
     return response(400, {
@@ -78,6 +86,41 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return response(401, {
         message: "認証情報を取得できませんでした",
       });
+    }
+
+    if (imageUrl) {
+      if (!imageBucket || !imageBucketRegion) {
+        throw new Error("画像用S3バケットの環境変数が設定されていません");
+      }
+
+      const imageKey = imageKeyFromUrl(
+        imageUrl,
+        imageBucket,
+        imageBucketRegion,
+      );
+      const userPlanCoverPrefix = `images/${cognitoSub}/plan-cover/`;
+      if (!imageKey?.startsWith(userPlanCoverPrefix)) {
+        return response(400, {
+          message: "指定された旅行計画画像を使用できません",
+        });
+      }
+
+      try {
+        await s3Client.send(
+          new HeadObjectCommand({
+            Bucket: imageBucket,
+            Key: imageKey,
+          }),
+        );
+      } catch (error) {
+        const name = errorName(error);
+        if (name === "NotFound" || name === "NoSuchKey") {
+          return response(400, {
+            message: "アップロード済み画像が見つかりません",
+          });
+        }
+        throw error;
+      }
     }
 
     // DB接続を取得

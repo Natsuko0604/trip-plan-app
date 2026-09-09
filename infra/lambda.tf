@@ -13,6 +13,7 @@ locals {
       }
 
       environment_variables = {
+        ALLOWED_ORIGIN       = var.allowed_origin
         COGNITO_USER_POOL_ID = aws_cognito_user_pool.users.id
         DB_SECRET_ARN        = aws_db_instance.main.master_user_secret[0].secret_arn
         DB_HOST              = aws_db_instance.main.address
@@ -58,11 +59,14 @@ locals {
       }
 
       environment_variables = {
+        ALLOWED_ORIGIN       = var.allowed_origin
         COGNITO_USER_POOL_ID = aws_cognito_user_pool.users.id
         DB_SECRET_ARN        = aws_db_instance.main.master_user_secret[0].secret_arn
         DB_HOST              = aws_db_instance.main.address
         DB_PORT              = tostring(aws_db_instance.main.port)
         DB_NAME              = aws_db_instance.main.db_name
+        IMAGE_BUCKET         = aws_s3_bucket.images.id
+        IMAGE_BUCKET_REGION  = var.aws_region
       }
 
       subnet_ids = [
@@ -88,6 +92,48 @@ locals {
           Effect   = "Allow"
           Action   = ["secretsmanager:GetSecretValue"]
           Resource = aws_db_instance.main.master_user_secret[0].secret_arn
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["s3:GetObject"]
+          Resource = "${aws_s3_bucket.images.arn}/images/*"
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["s3:ListBucket"]
+          Resource = aws_s3_bucket.images.arn
+          Condition = {
+            StringLike = {
+              "s3:prefix" = ["images/*"]
+            }
+          }
+        },
+      ]
+    },
+    image_upload_url_post = {
+      handler     = "image_upload_url_post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/image_upload_url_post.js"
+      memory_size = 128
+      timeout     = 10
+
+      managed_policies = {
+        logs = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      }
+
+      environment_variables = {
+        ALLOWED_ORIGIN      = var.allowed_origin
+        IMAGE_BUCKET        = aws_s3_bucket.images.id
+        IMAGE_BUCKET_REGION = var.aws_region
+      }
+
+      subnet_ids         = []
+      security_group_ids = []
+
+      inline_statements = [
+        {
+          Effect   = "Allow"
+          Action   = ["s3:PutObject"]
+          Resource = "${aws_s3_bucket.images.arn}/images/*"
         },
       ]
     }
