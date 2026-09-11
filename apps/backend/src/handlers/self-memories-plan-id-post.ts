@@ -88,7 +88,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // URLのidから、そのユーザー所有のplansを検索
-    const planId = event.pathParameters?.id;
+    const planId = event.pathParameters?.planId;
     if (!planId) {
       return response(400, {
         message: "旅行計画IDがありません",

@@ -136,7 +136,43 @@ locals {
           Resource = "${aws_s3_bucket.images.arn}/images/*"
         },
       ]
-    }
+    },
+    self_memories_plan_id_post = {
+      handler     = "self_memories_plan_id_post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-memories-plan-id-post.js"
+      memory_size = 256
+      timeout     = 15
+
+      managed_policies = {
+        logs = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        vpc  = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      }
+
+      environment_variables = {
+        ALLOWED_ORIGIN = var.allowed_origin
+        DB_SECRET_ARN  = aws_db_instance.main.master_user_secret[0].secret_arn
+        DB_HOST        = aws_db_instance.main.address
+        DB_PORT        = tostring(aws_db_instance.main.port)
+        DB_NAME        = aws_db_instance.main.db_name
+      }
+
+      subnet_ids = [
+        aws_subnet.private_1.id,
+        aws_subnet.private_2.id,
+      ]
+
+      security_group_ids = [
+        aws_security_group.lambda.id,
+      ]
+
+      inline_statements = [
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:GetSecretValue"]
+          Resource = aws_db_instance.main.master_user_secret[0].secret_arn
+        },
+      ]
+    },
   }
 
   lambda_policy_attachments = merge([
