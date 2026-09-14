@@ -149,6 +149,46 @@ resource "aws_api_gateway_method" "plan_id_get" {
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
+# GET /plans/{planId}をplans_id_get Lambdaへ接続
+resource "aws_api_gateway_integration" "plans_id_get_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.plan_id.id
+  http_method = aws_api_gateway_method.plan_id_get.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["plans_id_get"].invoke_arn
+}
+
+# /plans/{planId} OPTIONS
+resource "aws_api_gateway_method" "plans_id_get_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.plan_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# OPTIONS /plans/{planId}をplans_id_get Lambdaへ接続
+resource "aws_api_gateway_integration" "plans_id_get_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.plan_id.id
+  http_method = aws_api_gateway_method.plans_id_get_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["plans_id_get"].invoke_arn
+}
+
+# API GatewayのOPTIONSからplans_id_get Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_plans_id_get" {
+  statement_id  = "AllowExecutionFromApiGatewayPlansIdGet"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["plans_id_get"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/GET/plans/*"
+}
+
 // self
 resource "aws_api_gateway_resource" "self" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -612,10 +652,6 @@ resource "aws_api_gateway_method" "self_memories_plan_id_delete" {
 # Lambdaが未実装のAPIメソッドを一時的にMOCK Integrationへ接続
 locals {
   unimplemented_api_methods = {
-    plan_id_get = {
-      resource_id = aws_api_gateway_resource.plan_id.id
-      http_method = aws_api_gateway_method.plan_id_get.http_method
-    }
     self_get = {
       resource_id = aws_api_gateway_resource.self.id
       http_method = aws_api_gateway_method.self_get.http_method
@@ -755,6 +791,8 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.self_plans_id_favorites_options_lambda.id,
         aws_api_gateway_integration.plans_get_lambda.id,
         aws_api_gateway_integration.plans_get_options_lambda.id,
+        aws_api_gateway_integration.plans_id_get_lambda.id,
+        aws_api_gateway_integration.plans_id_get_options_lambda.id,
       ]
       mock_integrations = [
         for key in sort(keys(local.unimplemented_api_methods)) :
@@ -784,6 +822,8 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.self_plans_id_favorites_options_lambda,
     aws_api_gateway_integration.plans_get_lambda,
     aws_api_gateway_integration.plans_get_options_lambda,
+    aws_api_gateway_integration.plans_id_get_lambda,
+    aws_api_gateway_integration.plans_id_get_options_lambda,
     aws_api_gateway_integration_response.unimplemented_mock,
   ]
 
