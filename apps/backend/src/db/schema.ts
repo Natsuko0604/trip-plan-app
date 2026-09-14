@@ -1,3 +1,7 @@
+import { sql } from "drizzle-orm";
+import { integer } from "drizzle-orm/pg-core";
+import { check } from "drizzle-orm/pg-core";
+import { date } from "drizzle-orm/pg-core";
 import {
   pgTable,
   uuid,
@@ -42,6 +46,9 @@ export const plans = pgTable(
       .notNull()
       .references(() => users.id),
     title: varchar("title").notNull(),
+    startedAt: date("started_at").notNull(),
+    endedAt: date("ended_at").notNull(),
+    comment: text("comment"),
     isPublic: boolean("is_public").default(false).notNull(),
     imageUrl: varchar("image_url"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -61,6 +68,107 @@ export const plans = pgTable(
 
 export type Plan = typeof plans.$inferSelect;
 export type NewPlan = typeof plans.$inferInsert;
+
+// Costs
+export const costs = pgTable(
+  "costs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+
+    // hotel / restaurant / touring_spot / other など
+    category: varchar("category", { length: 30 }).notNull(),
+
+    // 「○○ホテル」「昼食」「お土産」など
+    name: varchar("name", { length: 100 }).notNull(),
+
+    // 日本円を整数で保存
+    amount: integer("amount").notNull(),
+
+    notes: text("notes"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("costs_plan_id_idx").on(table.planId),
+    index("costs_plan_id_category_idx").on(table.planId, table.category),
+    check("costs_amount_non_negative_check", sql`${table.amount} >= 0`),
+  ],
+);
+
+export type Cost = typeof costs.$inferSelect;
+export type NewCost = typeof costs.$inferInsert;
+
+// MemoryImages
+export const memoryImages = pgTable(
+  "memory_images",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+
+    imageUrl: varchar("image_url").notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("memory_images_plan_id_created_at_idx").on(
+      table.planId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type MemoryImage = typeof memoryImages.$inferSelect;
+export type NewMemoryImage = typeof memoryImages.$inferInsert;
+
+// Tags
+export const tags = pgTable("tags", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  // 「友達」「2人旅」「グルメ」など
+  name: varchar("name", { length: 50 }).notNull().unique(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Tag = typeof tags.$inferSelect;
+export type NewTag = typeof tags.$inferInsert;
+
+// PlanTags（PlansとTagsの中間テーブル）
+export const planTags = pgTable(
+  "plan_tags",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique("plan_tags_plan_id_tag_id_unique").on(table.planId, table.tagId),
+    index("plan_tags_tag_id_idx").on(table.tagId),
+  ],
+);
+
+export type PlanTag = typeof planTags.$inferSelect;
+export type NewPlanTag = typeof planTags.$inferInsert;
 
 // Prefectures
 export const prefectures = pgTable("prefectures", {

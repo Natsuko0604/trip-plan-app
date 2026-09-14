@@ -11,6 +11,20 @@ import { imageKeyFromUrl } from "../lib/images.js";
 const s3Client = new S3Client({});
 const imageBucket = process.env.IMAGE_BUCKET;
 const imageBucketRegion = process.env.IMAGE_BUCKET_REGION;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const isValidDate = (value: string) => {
+  if (!DATE_PATTERN.test(value)) {
+    return false;
+  }
+
+  const parsedDate = new Date(`${value}T00:00:00.000Z`);
+
+  return (
+    !Number.isNaN(parsedDate.getTime()) &&
+    parsedDate.toISOString().slice(0, 10) === value
+  );
+};
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const requestId = event.requestContext.requestId;
@@ -55,6 +69,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   // リクエストの型を確認するため
   const title = typeof body.title === "string" ? body.title.trim() : "";
+  const startedAt =
+    typeof body.startedAt === "string" ? body.startedAt.trim() : "";
+  const endedAt = typeof body.endedAt === "string" ? body.endedAt.trim() : "";
+  const comment =
+    typeof body.comment === "string" && body.comment.trim()
+      ? body.comment.trim()
+      : null;
   const isPublic = typeof body.isPublic === "boolean" ? body.isPublic : false;
   const requestedImageUrl =
     typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
@@ -65,6 +86,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       message: "タイトルは必須です",
     });
   }
+  if (!isValidDate(startedAt) || !isValidDate(endedAt)) {
+    return response(400, {
+      message: "旅行日はYYYY-MM-DD形式で指定してください",
+    });
+  }
+
+  if (endedAt < startedAt) {
+    return response(400, {
+      message: "終了日は開始日以降にしてください",
+    });
+  }
+
+  // 既存のisPublic検証
   if (body.isPublic !== undefined && typeof body.isPublic !== "boolean") {
     return response(400, {
       message: "isPublicはbooleanで指定してください",
@@ -146,12 +180,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       .values({
         userId: user.id,
         title,
+        startedAt,
+        endedAt,
+        comment,
         isPublic,
         imageUrl,
       })
       .returning({
         id: plans.id,
         title: plans.title,
+        startedAt: plans.startedAt,
+        endedAt: plans.endedAt,
+        comment: plans.comment,
         isPublic: plans.isPublic,
         imageUrl: plans.imageUrl,
         createdAt: plans.createdAt,
