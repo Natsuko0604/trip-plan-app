@@ -184,6 +184,9 @@ export const prefecturePlans = pgTable(
   "prefecture_plans",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
     prefectureId: uuid("prefecture_id")
       .notNull()
       .references(() => prefectures.id),

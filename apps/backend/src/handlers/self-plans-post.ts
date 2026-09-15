@@ -361,14 +361,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         tagIds.add(tagId);
       }
       if (tagIds.size) {
-        await tx.insert(planTags).values(
-          [...tagIds].map((tagId) => ({ planId: createdPlan.id, tagId })),
-        );
+        await tx
+          .insert(planTags)
+          .values(
+            [...tagIds].map((tagId) => ({ planId: createdPlan.id, tagId })),
+          );
       }
 
       if (resolvedPrefectures.size) {
         await tx.insert(prefecturePlans).values(
           [...resolvedPrefectures.values()].map((prefecture) => ({
+            userId: user.id,
             planId: createdPlan.id,
             prefectureId: prefecture.id,
             isCompleted: prefecture.isCompleted,

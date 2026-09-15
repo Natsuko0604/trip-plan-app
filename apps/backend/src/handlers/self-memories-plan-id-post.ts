@@ -40,10 +40,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   const parsedRequest = memoryPlanPostSchema.safeParse(requestBody);
   if (!parsedRequest.success) {
     return response(400, {
-      message:
-        parsedRequest.error.issues[0]?.path.length
-          ? parsedRequest.error.issues[0].message
-          : "リクエストボディが正しくありません",
+      message: parsedRequest.error.issues[0]?.path.length
+        ? parsedRequest.error.issues[0].message
+        : "リクエストボディが正しくありません",
     });
   }
 
@@ -126,6 +125,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const [prefecturePlan] = await db
       .insert(prefecturePlans)
       .values({
+        userId: user.id,
         prefectureId: prefecture.id,
         planId: plan.id,
         isCompleted: true,
