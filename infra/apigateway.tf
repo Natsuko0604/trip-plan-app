@@ -396,6 +396,27 @@ resource "aws_api_gateway_method" "self_plans_get" {
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
+# GET /selfをself_plans_get Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_get_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans.id
+  http_method = aws_api_gateway_method.self_get.http_method
+
+  integration_http_method = "GET"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_get"].invoke_arn
+}
+
+# API GatewayのOPTIONSからself_plans_get Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_get_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansGetOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_get"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/plans"
+}
+
 // self/plans/{plansId}
 resource "aws_api_gateway_resource" "self_plans_id" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -696,10 +717,6 @@ locals {
       resource_id = aws_api_gateway_resource.self.id
       http_method = aws_api_gateway_method.self_put.http_method
     }
-    self_plans_get = {
-      resource_id = aws_api_gateway_resource.self_plans.id
-      http_method = aws_api_gateway_method.self_plans_get.http_method
-    }
     self_plans_id_get = {
       resource_id = aws_api_gateway_resource.self_plans_id.id
       http_method = aws_api_gateway_method.self_plans_id_get.http_method
@@ -831,6 +848,7 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.plans_id_get_options_lambda.id,
         aws_api_gateway_integration.self_get_lambda.id,
         aws_api_gateway_integration.self_get_options_lambda.id,
+        aws_api_gateway_integration.self_plans_get_lambda.id,
       ]
       mock_integrations = [
         for key in sort(keys(local.unimplemented_api_methods)) :
@@ -864,6 +882,7 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.plans_id_get_options_lambda,
     aws_api_gateway_integration.self_get_lambda,
     aws_api_gateway_integration.self_get_options_lambda,
+    aws_api_gateway_integration.self_plans_get_lambda,
     aws_api_gateway_integration_response.unimplemented_mock,
   ]
 
