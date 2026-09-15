@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
+import { planIdPathSchema } from "@tripla/validation";
 import { CORS, response } from "../lib/cors";
 import { getDb } from "../db";
 import { errorName } from "../lib/error";
@@ -38,21 +39,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const db = await getDb();
-    const planId = event.pathParameters?.planId;
-
-    if (!planId) {
+    const parsedPath = planIdPathSchema.safeParse(event.pathParameters);
+    if (!parsedPath.success) {
       return response(400, {
-        message: "旅行計画IDがありません",
+        message: event.pathParameters?.planId
+          ? "旅行計画IDの形式が正しくありません"
+          : "旅行計画IDがありません",
       });
     }
-    // planIdのUUID形式検証
-    const UUID_PATTERN =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_PATTERN.test(planId)) {
-      return response(400, {
-        message: "旅行計画IDの形式が正しくありません",
-      });
-    }
+    const { planId } = parsedPath.data;
 
     // cognitoからcognitoSub取得
     const cognitoSub = event.requestContext.authorizer?.claims?.sub;

@@ -1,6 +1,7 @@
 // 地図作成
 
 import { APIGatewayProxyHandler } from "aws-lambda";
+import { memoryPlanPostSchema, planIdPathSchema } from "@tripla/validation";
 import { CORS, response } from "../lib/cors";
 import { getDb } from "../db";
 import { plans, prefecturePlans, prefectures, users } from "../db/schema";
@@ -36,28 +37,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   }
 
-  // クライアントから送られてきたリクエストbody
-  if (
-    typeof requestBody !== "object" ||
-    requestBody === null ||
-    Array.isArray(requestBody)
-  ) {
+  const parsedRequest = memoryPlanPostSchema.safeParse(requestBody);
+  if (!parsedRequest.success) {
     return response(400, {
-      message: "リクエストボディが正しくありません",
+      message:
+        parsedRequest.error.issues[0]?.path.length
+          ? parsedRequest.error.issues[0].message
+          : "リクエストボディが正しくありません",
     });
   }
 
-  // クライアントから送られてきたリクエストbody
-  const body = requestBody as Record<string, unknown>;
-
-  // リクエストの型を確認するため
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-
-  if (!name) {
-    return response(400, {
-      message: "都道府県の設定は必須です",
-    });
-  }
+  const { name } = parsedRequest.data;
 
   try {
     // DB接続を取得
@@ -88,21 +78,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // URLのidから、そのユーザー所有のplansを検索
-    const planId = event.pathParameters?.planId;
-    if (!planId) {
+    const parsedPath = planIdPathSchema.safeParse(event.pathParameters);
+    if (!parsedPath.success) {
       return response(400, {
-        message: "旅行計画IDがありません",
+        message: event.pathParameters?.planId
+          ? "旅行計画IDの形式が正しくありません"
+          : "旅行計画IDがありません",
       });
     }
-
-    // planIdのUUID形式検証
-    const UUID_PATTERN =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_PATTERN.test(planId)) {
-      return response(400, {
-        message: "旅行計画IDの形式が正しくありません",
-      });
-    }
+    const { planId } = parsedPath.data;
 
     const [plan] = await db
       .select({

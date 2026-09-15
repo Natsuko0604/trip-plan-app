@@ -1,6 +1,7 @@
 // 共通画像アップロードURL発行
 import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { imageUploadUrlPostSchema } from "@tripla/validation";
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import { CORS, response } from "../lib/cors.js";
 import { errorName } from "../lib/error.js";
@@ -8,7 +9,6 @@ import {
   createImageKey,
   createImageUrl,
   imageExtension,
-  isImageType,
 } from "../lib/images.js";
 
 const s3Client = new S3Client({});
@@ -59,31 +59,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   }
 
-  if (
-    typeof requestBody !== "object" ||
-    requestBody === null ||
-    Array.isArray(requestBody)
-  ) {
+  const parsedRequest = imageUploadUrlPostSchema.safeParse(requestBody);
+  if (!parsedRequest.success) {
     return response(400, {
-      message: "リクエストボディが正しくありません",
+      message:
+        parsedRequest.error.issues[0]?.path.length
+          ? parsedRequest.error.issues[0].message
+          : "リクエストボディが正しくありません",
     });
   }
 
-  const body = requestBody as Record<string, unknown>;
-  if (!isImageType(body.imageType)) {
-    return response(400, {
-      message: "imageTypeが正しくありません",
-    });
-  }
-
-  const extension = imageExtension(body.contentType);
-  if (!extension || typeof body.contentType !== "string") {
+  const { imageType, contentType } = parsedRequest.data;
+  const extension = imageExtension(contentType);
+  if (!extension) {
     return response(400, {
       message: "JPEG、PNG、WebP形式の画像を指定してください",
     });
   }
 
-  const imageKey = createImageKey(cognitoSub, body.imageType, extension);
+  const imageKey = createImageKey(cognitoSub, imageType, extension);
   const imageUrl = createImageUrl(
     imageBucket,
     imageBucketRegion,
@@ -96,10 +90,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       Key: imageKey,
       Conditions: [
         ["content-length-range", 1, maxImageSizeBytes],
-        ["eq", "$Content-Type", body.contentType],
+        ["eq", "$Content-Type", contentType],
       ],
       Fields: {
-        "Content-Type": body.contentType,
+        "Content-Type": contentType,
       },
       Expires: uploadUrlExpiresSeconds,
     });

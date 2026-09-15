@@ -1,5 +1,6 @@
 // 新規会員登録
 import type { APIGatewayProxyHandler } from "aws-lambda";
+import { signupPostSchema } from "@tripla/validation";
 
 import {
   AdminCreateUserCommand,
@@ -78,35 +79,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   }
 
-  if (
-    typeof requestBody !== "object" ||
-    requestBody === null ||
-    Array.isArray(requestBody)
-  ) {
+  const parsedRequest = signupPostSchema.safeParse(requestBody);
+  if (!parsedRequest.success) {
     return response(400, {
-      message: "リクエストボディが正しくありません",
+      message:
+        parsedRequest.error.issues[0]?.path.length
+          ? parsedRequest.error.issues[0].message
+          : "リクエストボディが正しくありません",
     });
   }
 
-  const body = requestBody as Record<string, unknown>;
-
-  const email =
-    typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-
-  const password = typeof body.password === "string" ? body.password : "";
-
-  if (!email || !password) {
-    return response(400, {
-      message: "emailとpasswordは必須です",
-    });
-  }
-
-  // 完全なメール検証ではなく、明らかな入力ミスを弾くための簡易チェック
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return response(400, {
-      message: "メールアドレスの形式が正しくありません",
-    });
-  }
+  const { email, password } = parsedRequest.data;
 
   let cognitoUserCreated = false;
 

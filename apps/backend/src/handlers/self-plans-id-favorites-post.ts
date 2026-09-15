@@ -1,6 +1,7 @@
 //自分のお気に入り追加
 
 import { APIGatewayProxyHandler } from "aws-lambda";
+import { planIdPathSchema } from "@tripla/validation";
 import { CORS, response } from "../lib/cors";
 import { getDb } from "../db";
 import { favorites, plans, users } from "../db/schema";
@@ -47,21 +48,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // URLのIDから、お気に入り対象の旅行計画を検索
-    const favoriteId = event.pathParameters?.planId;
-    if (!favoriteId) {
+    const parsedPath = planIdPathSchema.safeParse(event.pathParameters);
+    if (!parsedPath.success) {
       return response(400, {
-        message: "お気に入りIDがありません",
+        message: event.pathParameters?.planId
+          ? "お気に入りIDの形式が正しくありません"
+          : "お気に入りIDがありません",
       });
     }
-
-    // favoriteIdのUUID形式検証
-    const UUID_PATTERN =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_PATTERN.test(favoriteId)) {
-      return response(400, {
-        message: "お気に入りIDの形式が正しくありません",
-      });
-    }
+    const favoriteId = parsedPath.data.planId;
 
     // お気に入り対象の旅行計画をplansテーブルから取得
     const [plan] = await db

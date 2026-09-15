@@ -9,6 +9,7 @@
     "build:lambdas": "pnpm run build:lambda:signup && pnpm run build:lambda:self-plans && pnpm run build:lambda:image-upload-url"
   },
   "dependencies": {
+    "@tripla/validation": "workspace:*",
     "@aws-sdk/client-cognito-identity-provider": "^3.1121.0",
     "@aws-sdk/client-s3": "^3.1127.0",
     "@aws-sdk/client-secrets-manager": "^3.1121.0",

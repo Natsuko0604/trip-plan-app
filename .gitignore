@@ -49,3 +49,6 @@ next-env.d.ts
 
 # backend
 apps/backend/dist/lambda/*
+
+# frontend
+apps/frontend/.next

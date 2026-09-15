@@ -1,14 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { imageTypes, type ImageType } from "@tripla/validation";
 
-export const IMAGE_TYPES = [
-  "plan-cover",
-  "hotel",
-  "restaurant",
-  "touring-spot",
-  "memory",
-] as const;
-
-export type ImageType = (typeof IMAGE_TYPES)[number];
+export const IMAGE_TYPES = imageTypes;
+export type { ImageType };
 
 const imageExtensions: Record<string, string> = {
   "image/jpeg": "jpg",
