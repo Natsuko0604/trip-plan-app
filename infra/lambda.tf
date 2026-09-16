@@ -2,8 +2,8 @@ locals {
   lambda_functions = {
 
     signup_post = {
-      handler     = "signup_post.handler"
-      source_file = "${path.module}/../apps/backend/dist/lambda/signup_post.js"
+      handler     = "signup-post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/signup-post.js"
       memory_size = 256
       timeout     = 15
 
@@ -40,6 +40,7 @@ locals {
           ]
           Resource = aws_cognito_user_pool.users.arn
         },
+
         {
           Effect   = "Allow"
           Action   = ["secretsmanager:GetSecretValue"]
@@ -48,8 +49,8 @@ locals {
       ]
     },
     self_plans_post = {
-      handler     = "self_plans_post.handler"
-      source_file = "${path.module}/../apps/backend/dist/lambda/self_plans_post.js"
+      handler     = "self-plans-post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-post.js"
       memory_size = 256
       timeout     = 15
 
@@ -111,8 +112,8 @@ locals {
       ]
     },
     image_upload_url_post = {
-      handler     = "image_upload_url_post.handler"
-      source_file = "${path.module}/../apps/backend/dist/lambda/image_upload_url_post.js"
+      handler     = "image-upload-url-post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/image-upload-url-post.js"
       memory_size = 128
       timeout     = 10
 
@@ -138,7 +139,7 @@ locals {
       ]
     },
     self_memories_plan_id_post = {
-      handler     = "self_memories_plan_id_post.handler"
+      handler     = "self-memories-plan-id-post.handler"
       source_file = "${path.module}/../apps/backend/dist/lambda/self-memories-plan-id-post.js"
       memory_size = 256
       timeout     = 15
@@ -174,8 +175,8 @@ locals {
       ]
     },
     self_plans_id_favorites_post = {
-      handler     = "self_plans_id_favorites_post.handler"
-      source_file = "${path.module}/../apps/backend/dist/lambda/self_plans_id_favorites_post.js"
+      handler     = "self-plans-id-favorites-post.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-id-favorites-post.js"
       memory_size = 256
       timeout     = 15
 
@@ -210,7 +211,7 @@ locals {
       ]
     },
     plans_get = {
-      handler     = "plans_get.handler"
+      handler     = "plans-get.handler"
       source_file = "${path.module}/../apps/backend/dist/lambda/plans-get.js"
       memory_size = 256
       timeout     = 15
@@ -246,7 +247,7 @@ locals {
       ]
     },
     plans_id_get = {
-      handler     = "plans_id_get.handler"
+      handler     = "plans-id-get.handler"
       source_file = "${path.module}/../apps/backend/dist/lambda/plans-id-get.js"
       memory_size = 256
       timeout     = 15
@@ -282,7 +283,7 @@ locals {
       ]
     },
     self_get = {
-      handler     = "self_get.handler"
+      handler     = "self-get.handler"
       source_file = "${path.module}/../apps/backend/dist/lambda/self-get.js"
       memory_size = 256
       timeout     = 15
@@ -318,7 +319,7 @@ locals {
       ]
     },
     self_plans_get = {
-      handler     = "self_plans_get.handler"
+      handler     = "self-plans-get.handler"
       source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-get.js"
       memory_size = 256
       timeout     = 15
@@ -354,8 +355,8 @@ locals {
       ]
     },
     self_plans_id_get = {
-      handler     = "self_plans_id_get.handler"
-      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-get.js"
+      handler     = "self-plans-id-get.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-id-get.js"
       memory_size = 256
       timeout     = 15
 
@@ -390,8 +391,44 @@ locals {
       ]
     },
     self_memories_get = {
-      handler     = "self_memories_get.handler"
+      handler     = "self-memories-get.handler"
       source_file = "${path.module}/../apps/backend/dist/lambda/self-memories-get.js"
+      memory_size = 256
+      timeout     = 15
+
+      managed_policies = {
+        logs = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        vpc  = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      }
+
+      environment_variables = {
+        ALLOWED_ORIGIN = var.allowed_origin
+        DB_SECRET_ARN  = aws_db_instance.main.master_user_secret[0].secret_arn
+        DB_HOST        = aws_db_instance.main.address
+        DB_PORT        = tostring(aws_db_instance.main.port)
+        DB_NAME        = aws_db_instance.main.db_name
+      }
+
+      subnet_ids = [
+        aws_subnet.private_1.id,
+        aws_subnet.private_2.id,
+      ]
+
+      security_group_ids = [
+        aws_security_group.lambda.id,
+      ]
+
+      inline_statements = [
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:GetSecretValue"]
+          Resource = aws_db_instance.main.master_user_secret[0].secret_arn
+        },
+      ]
+    },
+    self_plans_favorites_get = {
+      handler     = "self-plans-favorites-get.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-favorites-get.js"
       memory_size = 256
       timeout     = 15
 

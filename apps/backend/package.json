@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build:lambda:signup": "esbuild src/handlers/signup-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/signup_post.js",
-    "build:lambda:self-plans": "esbuild src/handlers/self-plans-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/self_plans_post.js",
-    "build:lambda:image-upload-url": "esbuild src/handlers/image-upload-url-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/image_upload_url_post.js",
+    "clean:lambdas": "node -e \"require('node:fs').rmSync('dist/lambda', { recursive: true, force: true })\"",
+    "prebuild:lambdas": "pnpm run clean:lambdas",
+    "build:lambda:signup": "esbuild src/handlers/signup-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/signup-post.js",
+    "build:lambda:self-plans": "esbuild src/handlers/self-plans-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/self-plans-post.js",
+    "build:lambda:image-upload-url": "esbuild src/handlers/image-upload-url-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/image-upload-url-post.js",
     "build:lambdas": "esbuild src/handlers/*.ts --bundle --platform=node --target=node24 --format=cjs --outdir=dist/lambda"
   },
   "dependencies": {
