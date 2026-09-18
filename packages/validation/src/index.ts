@@ -17,11 +17,7 @@ const isValidDate = (value: string) => {
 };
 
 const requiredString = (message: string, maxLength = 255) =>
-  z
-    .string({ message })
-    .trim()
-    .min(1, { message })
-    .max(maxLength, { message });
+  z.string({ message }).trim().min(1, { message }).max(maxLength, { message });
 
 const nullableString = (maxLength = 255) =>
   z
@@ -72,6 +68,22 @@ export const signupPostSchema = z.object({
   password: z
     .string({ message: "emailとpasswordは必須です" })
     .min(1, { message: "emailとpasswordは必須です" }),
+});
+
+export const selfPutSchema = z.object({
+  nickName: z
+    .string()
+    .trim()
+    .max(30, { message: "ニックネームは30文字以内にしてください" }),
+  email: z
+    .string({ message: "emailは必須です" })
+    .trim()
+    .min(1, { message: "emailは必須です" })
+    .max(254, { message: "メールアドレスの形式が正しくありません" })
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
+      message: "メールアドレスの形式が正しくありません",
+    })
+    .transform((email) => email.toLowerCase()),
 });
 
 export const imageTypes = [
@@ -308,12 +320,8 @@ export const selfPlanPostSchema = z
 export type PlanIdPathInput = z.input<typeof planIdPathSchema>;
 export type SignupPostInput = z.input<typeof signupPostSchema>;
 export type SignupPostData = z.output<typeof signupPostSchema>;
-export type ImageUploadUrlPostInput = z.input<
-  typeof imageUploadUrlPostSchema
->;
-export type ImageUploadUrlPostData = z.output<
-  typeof imageUploadUrlPostSchema
->;
+export type ImageUploadUrlPostInput = z.input<typeof imageUploadUrlPostSchema>;
+export type ImageUploadUrlPostData = z.output<typeof imageUploadUrlPostSchema>;
 export type MemoryPlanPostInput = z.input<typeof memoryPlanPostSchema>;
 export type MemoryPlanPostData = z.output<typeof memoryPlanPostSchema>;
 export type SelfPlanPostInput = z.input<typeof selfPlanPostSchema>;

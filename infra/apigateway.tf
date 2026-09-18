@@ -99,7 +99,7 @@ resource "aws_api_gateway_integration" "plans_get_lambda" {
   resource_id = aws_api_gateway_resource.plans.id
   http_method = aws_api_gateway_method.plans_get.http_method
 
-  integration_http_method = "GET"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda["plans_get"].invoke_arn
 }
@@ -118,7 +118,7 @@ resource "aws_api_gateway_integration" "plans_get_options_lambda" {
   resource_id = aws_api_gateway_resource.plans.id
   http_method = aws_api_gateway_method.plans_get_options.http_method
 
-  integration_http_method = "GET"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda["plans_get"].invoke_arn
 }
@@ -211,7 +211,7 @@ resource "aws_api_gateway_integration" "self_get_lambda" {
   resource_id = aws_api_gateway_resource.self.id
   http_method = aws_api_gateway_method.self_get.http_method
 
-  integration_http_method = "GET"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda["self_get"].invoke_arn
 }
@@ -230,7 +230,7 @@ resource "aws_api_gateway_integration" "self_get_options_lambda" {
   resource_id = aws_api_gateway_resource.self.id
   http_method = aws_api_gateway_method.self_get_options.http_method
 
-  integration_http_method = "GET"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda["self_get"].invoke_arn
 }
@@ -252,6 +252,48 @@ resource "aws_api_gateway_method" "self_put" {
   http_method   = "PUT"
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+# PUT /selfをself_put Lambdaへ接続
+resource "aws_api_gateway_integration" "self_put_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self.id
+  http_method = aws_api_gateway_method.self_put.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_put"].invoke_arn
+}
+
+# API Gatewayからself_put Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_put" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPut"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_put"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/POST/self"
+}
+
+# OPTIONS /selfをself_put Lambdaへ接続
+resource "aws_api_gateway_integration" "self_put_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans_id.id
+  http_method = aws_api_gateway_method.self_plans_id_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_put"].invoke_arn
+}
+
+# API GatewayのOPTIONSからself_put Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansIdOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_put"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/plans/*"
 }
 
 // self/images
@@ -402,7 +444,7 @@ resource "aws_api_gateway_integration" "self_plans_get_lambda" {
   resource_id = aws_api_gateway_resource.self_plans.id
   http_method = aws_api_gateway_method.self_get.http_method
 
-  integration_http_method = "GET"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda["self_plans_get"].invoke_arn
 }
@@ -490,6 +532,38 @@ resource "aws_api_gateway_method" "self_plans_id_put" {
   http_method   = "PUT"
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+# PUT /self/plans/{plnId}をself_plans_id_put Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_id_put_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans_id.id
+  http_method = aws_api_gateway_method.self_plans_id_put.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_id_put"].invoke_arn
+}
+
+# API Gatewayからself_plans_id_put Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_id_put" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansIdPut"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_id_put"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/GET/self/plans/*"
+}
+
+# OPTIONS /self/plans/{planId}をself_plans_id_put Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_id_put_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans_id.id
+  http_method = aws_api_gateway_method.self_plans_id_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_id_put"].invoke_arn
 }
 
 // self/plans/{plansId} DELETE
@@ -843,14 +917,6 @@ resource "aws_api_gateway_method" "self_memories_plan_id_delete" {
 # Lambdaが未実装のAPIメソッドを一時的にMOCK Integrationへ接続
 locals {
   unimplemented_api_methods = {
-    self_put = {
-      resource_id = aws_api_gateway_resource.self.id
-      http_method = aws_api_gateway_method.self_put.http_method
-    }
-    self_plans_id_put = {
-      resource_id = aws_api_gateway_resource.self_plans_id.id
-      http_method = aws_api_gateway_method.self_plans_id_put.http_method
-    }
     self_plans_id_delete = {
       resource_id = aws_api_gateway_resource.self_plans_id.id
       http_method = aws_api_gateway_method.self_plans_id_delete.http_method
@@ -973,6 +1039,10 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.self_memories_get_options_lambda.id,
         aws_api_gateway_integration.self_plans_favorites_get_lambda.id,
         aws_api_gateway_integration.self_plans_favorites_get_options_lambda.id,
+        aws_api_gateway_integration.self_put_lambda.id,
+        aws_api_gateway_integration.self_put_options_lambda.id,
+        aws_api_gateway_integration.self_plans_id_put_lambda.id,
+        aws_api_gateway_integration.self_plans_id_put_options_lambda.id,
       ]
       mock_integrations = [
         for key in sort(keys(local.unimplemented_api_methods)) :
@@ -1013,6 +1083,10 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.self_memories_get_options_lambda,
     aws_api_gateway_integration.self_plans_favorites_get_lambda,
     aws_api_gateway_integration.self_plans_favorites_get_options_lambda,
+    aws_api_gateway_integration.self_put_lambda,
+    aws_api_gateway_integration.self_put_options_lambda,
+    aws_api_gateway_integration.self_plans_id_put_lambda,
+    aws_api_gateway_integration.self_plans_id_put_options_lambda,
     aws_api_gateway_integration_response.unimplemented_mock,
   ]
 
