@@ -237,6 +237,38 @@ const addReferenceIssue = (
   });
 };
 
+export const selfPlanPutSchema = z
+  .object({
+    title: requiredString("タイトルは必須です"),
+
+    startedAt: z
+      .string({ message: "旅行日はYYYY-MM-DD形式で指定してください" })
+      .trim()
+      .refine(isValidDate, {
+        message: "旅行日はYYYY-MM-DD形式で指定してください",
+      }),
+
+    endedAt: z
+      .string({ message: "旅行日はYYYY-MM-DD形式で指定してください" })
+      .trim()
+      .refine(isValidDate, {
+        message: "旅行日はYYYY-MM-DD形式で指定してください",
+      }),
+
+    comment: nullableText,
+    isPublic: z.boolean().optional().default(false),
+    imageUrl: nullableString(),
+
+    costs: z.array(costSchema).optional().default([]),
+    memoryImages: z.array(memoryImageSchema).optional().default([]),
+    prefectures: z.array(prefectureSchema).optional().default([]),
+    tags: z.array(tagSchema).optional().default([]),
+  })
+  .refine((plan) => plan.endedAt >= plan.startedAt, {
+    path: ["endedAt"],
+    message: "終了日は開始日以降にしてください",
+  });
+
 export const selfPlanPostSchema = z
   .object({
     title: requiredString("タイトルは必須です"),

@@ -2,7 +2,7 @@
 import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {
   planIdPathSchema,
-  selfPlanPostSchema,
+  selfPlanPutSchema,
   type ImageType,
 } from "@tripla/validation";
 import { and, eq, isNull } from "drizzle-orm";
@@ -10,20 +10,12 @@ import type { APIGatewayProxyHandler } from "aws-lambda";
 import { getDb } from "../db";
 import {
   costs,
-  hotelImages,
-  hotels,
   memoryImages,
-  packingItems,
   plans,
   planTags,
   prefecturePlans,
   prefectures,
-  restaurantImages,
-  restaurants,
   tags,
-  timelines,
-  touringSpotImages,
-  touringSpots,
   users,
 } from "../db/schema";
 import { CORS, response } from "../lib/cors";
@@ -101,23 +93,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   }
 
-  const parsedRequest = selfPlanPostSchema.safeParse(requestBody);
+  const parsedRequest = selfPlanPutSchema.safeParse(requestBody);
   if (!parsedRequest.success) {
     const issue = parsedRequest.error.issues[0];
     const fieldName = issue?.path[0];
     const relatedFields = new Set([
       "costs",
-      "hotels",
-      "hotelImages",
       "memoryImages",
-      "packingItems",
       "prefectures",
-      "restaurants",
-      "restaurantImages",
       "tags",
-      "timelines",
-      "touringSpots",
-      "touringSpotImages",
     ]);
     let message = issue?.path.length
       ? issue.message
@@ -193,15 +177,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ...(imageUrl
         ? [validateUploadedImage(imageUrl, cognitoSub, "plan-cover")]
         : []),
-      ...relatedData.hotelImages.map((image) =>
-        validateUploadedImage(image.imageUrl, cognitoSub, "hotel"),
-      ),
-      ...relatedData.restaurantImages.map((image) =>
-        validateUploadedImage(image.imageUrl, cognitoSub, "restaurant"),
-      ),
-      ...relatedData.touringSpotImages.map((image) =>
-        validateUploadedImage(image.imageUrl, cognitoSub, "touring-spot"),
-      ),
       ...relatedData.memoryImages.map((image) =>
         validateUploadedImage(image.imageUrl, cognitoSub, "memory"),
       ),
@@ -282,15 +257,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
       await tx.delete(costs).where(eq(costs.planId, planId));
       await tx.delete(memoryImages).where(eq(memoryImages.planId, planId));
-      await tx.delete(packingItems).where(eq(packingItems.planId, planId));
-      await tx.delete(timelines).where(eq(timelines.planId, planId));
       await tx.delete(planTags).where(eq(planTags.planId, planId));
       await tx
         .delete(prefecturePlans)
         .where(eq(prefecturePlans.planId, planId));
-      await tx.delete(hotels).where(eq(hotels.planId, planId));
-      await tx.delete(restaurants).where(eq(restaurants.planId, planId));
-      await tx.delete(touringSpots).where(eq(touringSpots.planId, planId));
 
       if (relatedData.costs.length) {
         await tx.insert(costs).values(
@@ -306,119 +276,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           relatedData.memoryImages.map((item) => ({
             planId,
             ...item,
-          })),
-        );
-      }
-
-      if (relatedData.packingItems.length) {
-        await tx.insert(packingItems).values(
-          relatedData.packingItems.map((item) => ({
-            planId,
-            ...item,
-          })),
-        );
-      }
-
-      if (relatedData.timelines.length) {
-        await tx.insert(timelines).values(
-          relatedData.timelines.map((item) => ({
-            planId,
-            title: item.title,
-            startAt: item.startedAt,
-            endAt: item.endedAt,
-          })),
-        );
-      }
-
-      const hotelIdMap = new Map<string, string>();
-      if (relatedData.hotels.length) {
-        const created = await tx
-          .insert(hotels)
-          .values(
-            relatedData.hotels.map((item) => ({
-              planId,
-              name: item.name,
-              address: item.address,
-              phoneNumber: item.phoneNumber,
-              checkInTime: item.checkInTime,
-              checkoutTime: item.checkOutTime,
-              dinnerStartedAt: item.dinnerStartedAt,
-              dinnerEndedAt: item.dinnerEndedAt,
-              breakfastStartedAt: item.breakfastStartedTime,
-              breakfastEndedAt: item.breakfastEndedTime,
-              notes: item.notes,
-            })),
-          )
-          .returning({ id: hotels.id });
-
-        relatedData.hotels.forEach((item, index) => {
-          if (item.id) {
-            hotelIdMap.set(item.id, created[index].id);
-          }
-        });
-      }
-
-      if (relatedData.hotelImages.length) {
-        await tx.insert(hotelImages).values(
-          relatedData.hotelImages.map((image) => ({
-            hotelId: hotelIdMap.get(image.hotelId) as string,
-            imageUrl: image.imageUrl,
-          })),
-        );
-      }
-
-      const restaurantIdMap = new Map<string, string>();
-      if (relatedData.restaurants.length) {
-        const created = await tx
-          .insert(restaurants)
-          .values(
-            relatedData.restaurants.map(({ id: _id, ...item }) => ({
-              planId,
-              ...item,
-            })),
-          )
-          .returning({ id: restaurants.id });
-
-        relatedData.restaurants.forEach((item, index) => {
-          if (item.id) {
-            restaurantIdMap.set(item.id, created[index].id);
-          }
-        });
-      }
-
-      if (relatedData.restaurantImages.length) {
-        await tx.insert(restaurantImages).values(
-          relatedData.restaurantImages.map((image) => ({
-            restaurantId: restaurantIdMap.get(image.restaurantId) as string,
-            imageUrl: image.imageUrl,
-          })),
-        );
-      }
-
-      const touringSpotIdMap = new Map<string, string>();
-      if (relatedData.touringSpots.length) {
-        const created = await tx
-          .insert(touringSpots)
-          .values(
-            relatedData.touringSpots.map(({ id: _id, ...item }) => ({
-              planId,
-              ...item,
-            })),
-          )
-          .returning({ id: touringSpots.id });
-
-        relatedData.touringSpots.forEach((item, index) => {
-          if (item.id) {
-            touringSpotIdMap.set(item.id, created[index].id);
-          }
-        });
-      }
-
-      if (relatedData.touringSpotImages.length) {
-        await tx.insert(touringSpotImages).values(
-          relatedData.touringSpotImages.map((image) => ({
-            touringSpotId: touringSpotIdMap.get(image.touringSpotId) as string,
-            imageUrl: image.imageUrl,
           })),
         );
       }
