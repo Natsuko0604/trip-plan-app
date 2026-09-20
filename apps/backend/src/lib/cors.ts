@@ -7,7 +7,7 @@ export const CORS = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": allowedOrigin,
   "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  "Access-Control-Allow-Methods": "OPTIONS,POST",
+  "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
 };
 
 // API Gatewayへ返すレスポンス形式を共通化

@@ -115,7 +115,7 @@ const costSchema = z.object({
   notes: nullableString(),
 });
 
-const hotelSchema = z.object({
+export const hotelSchema = z.object({
   id: sourceIdSchema.optional(),
   name: requiredString("ホテル名は必須です"),
   address: nullableString(),
@@ -173,10 +173,10 @@ const packingItemSchema = z.object({
   isReady: z.boolean().optional().default(false),
 });
 
-const timelineSchema = z
+export const timelineSchema = z
   .object({
     title: requiredString("タイトルは必須です"),
-    startedAt: requiredString("開始日時は必須です").transform(
+    startAt: requiredString("開始日時は必須です").transform(
       (value, context) => {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) {
@@ -189,21 +189,19 @@ const timelineSchema = z
         return date;
       },
     ),
-    endedAt: requiredString("終了日時は必須です").transform(
-      (value, context) => {
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-          context.addIssue({
-            code: "custom",
-            message: "終了日時の形式が正しくありません",
-          });
-          return z.NEVER;
-        }
-        return date;
-      },
-    ),
+    endAt: requiredString("終了日時は必須です").transform((value, context) => {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        context.addIssue({
+          code: "custom",
+          message: "終了日時の形式が正しくありません",
+        });
+        return z.NEVER;
+      }
+      return date;
+    }),
   })
-  .refine((timeline) => timeline.endedAt >= timeline.startedAt, {
+  .refine((timeline) => timeline.endAt >= timeline.startAt, {
     path: ["endedAt"],
     message: "終了日時は開始日時以降にしてください",
   });
@@ -236,6 +234,28 @@ const addReferenceIssue = (
     message: `${key}に対応するデータがありません`,
   });
 };
+
+export const hotelPutSchema = z
+  .object({
+    hotels: z.array(hotelSchema).optional().default([]),
+    hotelImages: z.array(hotelImageSchema).optional().default([]),
+  })
+  .superRefine((data, context) => {
+    if (duplicatedIds(data.hotels)) {
+      context.addIssue({
+        code: "custom",
+        path: ["hotels"],
+        message: "hotels.idが重複しています",
+      });
+    }
+
+    const hotelIds = new Set(data.hotels.flatMap((hotel) => hotel.id ?? []));
+    data.hotelImages.forEach((image, index) => {
+      if (!hotelIds.has(image.hotelId)) {
+        addReferenceIssue(context, "hotelImages", index, "hotelId");
+      }
+    });
+  });
 
 export const selfPlanPutSchema = z
   .object({
@@ -358,3 +378,5 @@ export type MemoryPlanPostInput = z.input<typeof memoryPlanPostSchema>;
 export type MemoryPlanPostData = z.output<typeof memoryPlanPostSchema>;
 export type SelfPlanPostInput = z.input<typeof selfPlanPostSchema>;
 export type SelfPlanPostData = z.output<typeof selfPlanPostSchema>;
+export type HotelPutInput = z.input<typeof hotelPutSchema>;
+export type HotelPutData = z.output<typeof hotelPutSchema>;
