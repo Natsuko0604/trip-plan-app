@@ -239,8 +239,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           relatedData.timelines.map((item) => ({
             planId: createdPlan.id,
             title: item.title,
-            startAt: item.startedAt,
-            endAt: item.endedAt,
+            startAt: item.startAt,
+            endAt: item.endAt,
           })),
         );
       }

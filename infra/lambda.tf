@@ -571,8 +571,114 @@ locals {
       ]
     },
     self_plans_id_hotels_put = {
-      handler     = "self_plans_id_hotels_put.handler"
-      source_file = "${path.module}/../apps/backend/dist/lambda/self_plans_id_hotels_put.js"
+      handler     = "self-plans-id-hotels-put.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-id-hotels-put.js"
+      memory_size = 256
+      timeout     = 15
+
+      managed_policies = {
+        logs = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        vpc  = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      }
+
+      environment_variables = {
+        ALLOWED_ORIGIN      = var.allowed_origin
+        DB_SECRET_ARN       = aws_db_instance.main.master_user_secret[0].secret_arn
+        DB_HOST             = aws_db_instance.main.address
+        DB_PORT             = tostring(aws_db_instance.main.port)
+        DB_NAME             = aws_db_instance.main.db_name
+        IMAGE_BUCKET        = aws_s3_bucket.images.id
+        IMAGE_BUCKET_REGION = var.aws_region
+      }
+
+      subnet_ids = [
+        aws_subnet.private_1.id,
+        aws_subnet.private_2.id,
+      ]
+
+      security_group_ids = [
+        aws_security_group.lambda.id,
+      ]
+
+      inline_statements = [
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:GetSecretValue"]
+          Resource = aws_db_instance.main.master_user_secret[0].secret_arn
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["s3:GetObject"]
+          Resource = "${aws_s3_bucket.images.arn}/images/*"
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["s3:ListBucket"]
+          Resource = aws_s3_bucket.images.arn
+          Condition = {
+            StringLike = {
+              "s3:prefix" = ["images/*"]
+            }
+          }
+        },
+      ]
+    },
+    self_plans_id_restaurants_put = {
+      handler     = "self-plans-id-restaurants-put.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-id-restaurants-put.js"
+      memory_size = 256
+      timeout     = 15
+
+      managed_policies = {
+        logs = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        vpc  = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      }
+
+      environment_variables = {
+        ALLOWED_ORIGIN      = var.allowed_origin
+        DB_SECRET_ARN       = aws_db_instance.main.master_user_secret[0].secret_arn
+        DB_HOST             = aws_db_instance.main.address
+        DB_PORT             = tostring(aws_db_instance.main.port)
+        DB_NAME             = aws_db_instance.main.db_name
+        IMAGE_BUCKET        = aws_s3_bucket.images.id
+        IMAGE_BUCKET_REGION = var.aws_region
+      }
+
+      subnet_ids = [
+        aws_subnet.private_1.id,
+        aws_subnet.private_2.id,
+      ]
+
+      security_group_ids = [
+        aws_security_group.lambda.id,
+      ]
+
+      inline_statements = [
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:GetSecretValue"]
+          Resource = aws_db_instance.main.master_user_secret[0].secret_arn
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["s3:GetObject"]
+          Resource = "${aws_s3_bucket.images.arn}/images/*"
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["s3:ListBucket"]
+          Resource = aws_s3_bucket.images.arn
+          Condition = {
+            StringLike = {
+              "s3:prefix" = ["images/*"]
+            }
+          }
+        },
+      ]
+    },
+    self_plans_id_touring_spots_put = {
+      handler     = "self-plans-id-touring-spots-put.handler"
+      source_file = "${path.module}/../apps/backend/dist/lambda/self-plans-id-touring-spots-put.js"
       memory_size = 256
       timeout     = 15
 
@@ -691,6 +797,11 @@ resource "aws_iam_role_policy" "lambda" {
 # Lambda本体
 resource "aws_lambda_function" "lambda" {
   for_each = local.lambda_functions
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda,
+    aws_iam_role_policy.lambda,
+  ]
 
   function_name = "${local.project_name}-${replace(each.key, "_", "-")}"
 

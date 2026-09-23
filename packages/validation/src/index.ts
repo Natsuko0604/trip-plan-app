@@ -129,12 +129,12 @@ export const hotelSchema = z.object({
   notes: nullableString(),
 });
 
-const hotelImageSchema = z.object({
+export const hotelImageSchema = z.object({
   hotelId: sourceIdSchema,
   imageUrl: requiredString("imageUrlは必須です"),
 });
 
-const restaurantSchema = z.object({
+export const restaurantSchema = z.object({
   id: sourceIdSchema.optional(),
   name: requiredString("飲食店名は必須です"),
   address: nullableString(),
@@ -144,12 +144,12 @@ const restaurantSchema = z.object({
   notes: nullableString(),
 });
 
-const restaurantImageSchema = z.object({
+export const restaurantImageSchema = z.object({
   restaurantId: sourceIdSchema,
   imageUrl: requiredString("imageUrlは必須です"),
 });
 
-const touringSpotSchema = z.object({
+export const touringSpotSchema = z.object({
   id: sourceIdSchema.optional(),
   name: requiredString("観光地名は必須です"),
   address: nullableString(),
@@ -159,16 +159,16 @@ const touringSpotSchema = z.object({
   notes: nullableString(),
 });
 
-const touringSpotImageSchema = z.object({
+export const touringSpotImageSchema = z.object({
   touringSpotId: sourceIdSchema,
   imageUrl: requiredString("imageUrlは必須です"),
 });
 
-const memoryImageSchema = z.object({
+export const memoryImageSchema = z.object({
   imageUrl: requiredString("imageUrlは必須です"),
 });
 
-const packingItemSchema = z.object({
+export const packingItemSchema = z.object({
   name: requiredString("持ち物名は必須です"),
   isReady: z.boolean().optional().default(false),
 });
@@ -253,6 +253,61 @@ export const hotelPutSchema = z
     data.hotelImages.forEach((image, index) => {
       if (!hotelIds.has(image.hotelId)) {
         addReferenceIssue(context, "hotelImages", index, "hotelId");
+      }
+    });
+  });
+
+export const restaurantPutSchema = z
+  .object({
+    restaurants: z.array(restaurantSchema).optional().default([]),
+    restaurantImages: z.array(restaurantImageSchema).optional().default([]),
+  })
+  .superRefine((data, context) => {
+    if (duplicatedIds(data.restaurants)) {
+      context.addIssue({
+        code: "custom",
+        path: ["restaurants"],
+        message: "restaurants.idが重複しています",
+      });
+    }
+
+    const restaurantIds = new Set(
+      data.restaurants.flatMap((restaurant) => restaurant.id ?? []),
+    );
+
+    data.restaurantImages.forEach((image, index) => {
+      if (!restaurantIds.has(image.restaurantId)) {
+        addReferenceIssue(context, "restaurantImages", index, "restaurantId");
+      }
+    });
+  });
+
+export const touringSpotPutSchema = z
+  .object({
+    touringSpots: z.array(touringSpotSchema).optional().default([]),
+    touringSpotImages: z.array(touringSpotImageSchema).optional().default([]),
+  })
+  .superRefine((data, context) => {
+    if (duplicatedIds(data.touringSpots)) {
+      context.addIssue({
+        code: "custom",
+        path: ["touringSpots"],
+        message: "touringSpots.idが重複しています",
+      });
+    }
+
+    const touringSpotIds = new Set(
+      data.touringSpots.flatMap((touringSpot) => touringSpot.id ?? []),
+    );
+
+    data.touringSpotImages.forEach((image, index) => {
+      if (!touringSpotIds.has(image.touringSpotId)) {
+        addReferenceIssue(
+          context,
+          "touringSpotImages",
+          index,
+          "touringSpotId",
+        );
       }
     });
   });
@@ -380,3 +435,7 @@ export type SelfPlanPostInput = z.input<typeof selfPlanPostSchema>;
 export type SelfPlanPostData = z.output<typeof selfPlanPostSchema>;
 export type HotelPutInput = z.input<typeof hotelPutSchema>;
 export type HotelPutData = z.output<typeof hotelPutSchema>;
+export type RestaurantPutInput = z.input<typeof restaurantPutSchema>;
+export type RestaurantPutData = z.output<typeof restaurantPutSchema>;
+export type TouringSpotPutInput = z.input<typeof touringSpotPutSchema>;
+export type TouringSpotPutData = z.output<typeof touringSpotPutSchema>;
