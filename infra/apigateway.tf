@@ -845,6 +845,7 @@ resource "aws_api_gateway_resource" "self_plans_id_items" {
   parent_id   = aws_api_gateway_resource.self_plans_id.id
   path_part   = "items"
 }
+
 // self/plans/{plansId}/items PUT
 resource "aws_api_gateway_method" "self_plans_id_items_put" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
@@ -852,6 +853,56 @@ resource "aws_api_gateway_method" "self_plans_id_items_put" {
   http_method   = "PUT"
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+# PUT /self/plans/{planId}/itemsをself_plans_id_items_put Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_id_items_put_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans_id_items.id
+  http_method = aws_api_gateway_method.self_plans_id_items_put.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_id_items_put"].invoke_arn
+}
+
+# API Gatewayからself_plans_id_items_put Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_id_items_put" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansIdItemsPut"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_id_items_put"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/PUT/self/plans/*/items"
+}
+
+# /self/plans/{planId}/items OPTIONS
+resource "aws_api_gateway_method" "self_plans_id_items_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.self_plans_id_items.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# OPTIONS /self/plans/{planId}/itemsをself_plans_id_items_put Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_id_items_options_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans_id_items.id
+  http_method = aws_api_gateway_method.self_plans_id_items_options.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_id_items_put"].invoke_arn
+}
+
+# API GatewayのOPTIONSからself_plans_id_items_put Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_id_items_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansIdItemsOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_id_items_put"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/plans/*/items"
 }
 
 // self/plans/{plansId}/favorites
@@ -1121,10 +1172,6 @@ locals {
       resource_id = aws_api_gateway_resource.self_plans_id.id
       http_method = aws_api_gateway_method.self_plans_id_delete.http_method
     }
-    self_plans_id_items_put = {
-      resource_id = aws_api_gateway_resource.self_plans_id_items.id
-      http_method = aws_api_gateway_method.self_plans_id_items_put.http_method
-    }
     self_plans_id_favorites_delete = {
       resource_id = aws_api_gateway_resource.self_plans_id_favorites.id
       http_method = aws_api_gateway_method.self_plans_id_favorites_delete.http_method
@@ -1231,6 +1278,10 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.self_plans_id_timelines_put_lambda.id,
         aws_api_gateway_method.self_plans_id_timelines_options.id,
         aws_api_gateway_integration.self_plans_id_timelines_options_lambda.id,
+        aws_api_gateway_method.self_plans_id_items_put.id,
+        aws_api_gateway_integration.self_plans_id_items_put_lambda.id,
+        aws_api_gateway_method.self_plans_id_items_options.id,
+        aws_api_gateway_integration.self_plans_id_items_options_lambda.id,
         aws_api_gateway_method.self_plans_id_hotels_put.id,
         aws_api_gateway_integration.self_plans_id_hotels_put_lambda.id,
         aws_api_gateway_method.self_plans_id_hotels_options.id,
@@ -1289,6 +1340,8 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.self_plans_id_put_options_lambda,
     aws_api_gateway_integration.self_plans_id_timelines_put_lambda,
     aws_api_gateway_integration.self_plans_id_timelines_options_lambda,
+    aws_api_gateway_integration.self_plans_id_items_put_lambda,
+    aws_api_gateway_integration.self_plans_id_items_options_lambda,
     aws_api_gateway_integration.self_plans_id_hotels_put_lambda,
     aws_api_gateway_integration.self_plans_id_hotels_options_lambda,
     aws_api_gateway_integration.self_plans_id_restaurants_put_lambda,
