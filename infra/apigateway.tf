@@ -1000,6 +1000,32 @@ resource "aws_api_gateway_method" "self_plans_id_favorites_delete" {
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
+moved {
+  from = aws_api_gateway_integration.unimplemented_mock["self_plans_id_favorites_delete"]
+  to   = aws_api_gateway_integration.self_plans_id_favorites_delete_lambda
+}
+
+# DELETE /self/plans/{planId}/favoritesをself_plans_id_favorites_delete Lambdaへ接続
+resource "aws_api_gateway_integration" "self_plans_id_favorites_delete_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_plans_id_favorites.id
+  http_method = aws_api_gateway_method.self_plans_id_favorites_delete.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_plans_id_favorites_delete"].invoke_arn
+}
+
+# API Gatewayからself_plans_id_favorites_delete Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_plans_id_favorites_delete" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfPlansIdFavoritesDelete"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_plans_id_favorites_delete"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/DELETE/self/plans/*/favorites"
+}
+
 // self/plans/favorites
 resource "aws_api_gateway_resource" "self_plans_favorites" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -1233,63 +1259,6 @@ resource "aws_lambda_permission" "allow_apigateway_self_memories_memory_id_optio
   source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/memories/*"
 }
 
-# Lambdaが未実装のAPIメソッドを一時的にMOCK Integrationへ接続
-locals {
-  unimplemented_api_methods = {
-    self_plans_id_favorites_delete = {
-      resource_id = aws_api_gateway_resource.self_plans_id_favorites.id
-      http_method = aws_api_gateway_method.self_plans_id_favorites_delete.http_method
-    }
-  }
-}
-
-resource "aws_api_gateway_integration" "unimplemented_mock" {
-  for_each = local.unimplemented_api_methods
-
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = each.value.resource_id
-  http_method = each.value.http_method
-  type        = "MOCK"
-
-  request_templates = {
-    "application/json" = jsonencode({ statusCode = 501 })
-  }
-}
-
-resource "aws_api_gateway_method_response" "unimplemented_mock" {
-  for_each = local.unimplemented_api_methods
-
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = each.value.resource_id
-  http_method = each.value.http_method
-  status_code = "501"
-
-  response_models = {
-    "application/json" = "Empty"
-  }
-
-  response_parameters = {
-    "method.response.header.Content-Type" = true
-  }
-}
-
-resource "aws_api_gateway_integration_response" "unimplemented_mock" {
-  for_each = local.unimplemented_api_methods
-
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = each.value.resource_id
-  http_method = aws_api_gateway_integration.unimplemented_mock[each.key].http_method
-  status_code = aws_api_gateway_method_response.unimplemented_mock[each.key].status_code
-
-  response_templates = {
-    "application/json" = jsonencode({ message = "未実装のAPIです" })
-  }
-
-  response_parameters = {
-    "method.response.header.Content-Type" = "'application/json'"
-  }
-}
-
 // Terraformで 作成したAPI Gateway（REST API）の設定を「デプロイする」ためのリソース
 resource "aws_api_gateway_deployment" "current" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -1319,6 +1288,8 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.self_plans_id_favorites_post_lambda.id,
         aws_api_gateway_method.self_plans_id_favorites_options.id,
         aws_api_gateway_integration.self_plans_id_favorites_options_lambda.id,
+        aws_api_gateway_method.self_plans_id_favorites_delete.id,
+        aws_api_gateway_integration.self_plans_id_favorites_delete_lambda.id,
         aws_api_gateway_integration.plans_get_lambda.id,
         aws_api_gateway_integration.plans_get_options_lambda.id,
         aws_api_gateway_integration.plans_id_get_lambda.id,
@@ -1359,18 +1330,6 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_method.self_plans_id_touring_spots_options.id,
         aws_api_gateway_integration.self_plans_id_touring_spots_options_lambda.id,
       ]
-      mock_integrations = [
-        for key in sort(keys(local.unimplemented_api_methods)) :
-        aws_api_gateway_integration.unimplemented_mock[key].id
-      ]
-      mock_method_responses = [
-        for key in sort(keys(local.unimplemented_api_methods)) :
-        aws_api_gateway_method_response.unimplemented_mock[key].id
-      ]
-      mock_integration_responses = [
-        for key in sort(keys(local.unimplemented_api_methods)) :
-        aws_api_gateway_integration_response.unimplemented_mock[key].id
-      ]
     }))
   }
 
@@ -1386,6 +1345,7 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.self_memories_memory_id_options_lambda,
     aws_api_gateway_integration.self_plans_id_favorites_post_lambda,
     aws_api_gateway_integration.self_plans_id_favorites_options_lambda,
+    aws_api_gateway_integration.self_plans_id_favorites_delete_lambda,
     aws_api_gateway_integration.plans_get_lambda,
     aws_api_gateway_integration.plans_get_options_lambda,
     aws_api_gateway_integration.plans_id_get_lambda,
@@ -1414,7 +1374,6 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.self_plans_id_restaurants_options_lambda,
     aws_api_gateway_integration.self_plans_id_touring_spots_put_lambda,
     aws_api_gateway_integration.self_plans_id_touring_spots_options_lambda,
-    aws_api_gateway_integration_response.unimplemented_mock,
   ]
 
   lifecycle {
