@@ -105,6 +105,7 @@ export const imageUploadUrlPostSchema = z.object({
 });
 
 export const memoryPlanPostSchema = z.object({
+  planId: uuidSchema.nullable().optional().default(null),
   name: requiredString("都道府県の設定は必須です"),
 });
 

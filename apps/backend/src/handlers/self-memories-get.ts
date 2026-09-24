@@ -40,9 +40,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const memoryList = await db
-      .selectDistinct({
-        id: prefectures.id,
+      .select({
+        id: prefecturePlans.id,
+        prefectureId: prefectures.id,
         name: prefectures.name,
+        planId: prefecturePlans.planId,
       })
       .from(prefectures)
       .innerJoin(

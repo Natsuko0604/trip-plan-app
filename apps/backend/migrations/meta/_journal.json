@@ -43,6 +43,13 @@
       "when": 1789461846235,
       "tag": "0005_peaceful_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790224866706,
+      "tag": "0006_absent_nemesis",
+      "breakpoints": true
     }
   ]
 }

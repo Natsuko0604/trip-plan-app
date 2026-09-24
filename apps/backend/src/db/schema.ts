@@ -10,6 +10,7 @@ import {
   boolean,
   time,
   unique,
+  uniqueIndex,
   index,
   text,
 } from "drizzle-orm/pg-core";
@@ -190,9 +191,7 @@ export const prefecturePlans = pgTable(
     prefectureId: uuid("prefecture_id")
       .notNull()
       .references(() => prefectures.id),
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => plans.id),
+    planId: uuid("plan_id").references(() => plans.id),
     isCompleted: boolean("is_completed").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -205,6 +204,9 @@ export const prefecturePlans = pgTable(
       table.planId,
       table.prefectureId,
     ),
+    uniqueIndex("prefecture_plans_user_id_prefecture_id_unlinked_unique")
+      .on(table.userId, table.prefectureId)
+      .where(sql`${table.planId} IS NULL`),
   ],
 );
 

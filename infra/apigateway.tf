@@ -1112,78 +1112,125 @@ resource "aws_lambda_permission" "allow_apigateway_self_memories_get_options" {
   source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/*"
 }
 
-// self/memories/{planId}
-resource "aws_api_gateway_resource" "self_memories_plan_id" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  parent_id   = aws_api_gateway_resource.self_memories.id
-  path_part   = "{planId}"
-}
-
-// self/memories/{planId} POST
-resource "aws_api_gateway_method" "self_memories_plan_id_post" {
+// self/memories POST
+resource "aws_api_gateway_method" "self_memories_post" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.self_memories_plan_id.id
+  resource_id   = aws_api_gateway_resource.self_memories.id
   http_method   = "POST"
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
-# POST /self/memories/{planId}をself_memories_plan_id_post Lambdaへ接続
-resource "aws_api_gateway_integration" "self_memories_plan_id_post_lambda" {
+# POST /self/memoriesをself_memories_post Lambdaへ接続
+resource "aws_api_gateway_integration" "self_memories_post_lambda" {
   rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.self_memories_plan_id.id
-  http_method = aws_api_gateway_method.self_memories_plan_id_post.http_method
+  resource_id = aws_api_gateway_resource.self_memories.id
+  http_method = aws_api_gateway_method.self_memories_post.http_method
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.lambda["self_memories_plan_id_post"].invoke_arn
+  uri                     = aws_lambda_function.lambda["self_memories_post"].invoke_arn
 }
 
-# API Gatewayからself_memories_plan_id_post Lambdaを実行する権限
-resource "aws_lambda_permission" "allow_apigateway_self_memories_plan_id_post" {
-  statement_id  = "AllowExecutionFromApiGatewaySelfMemoriesPlanIdPost"
+# API Gatewayからself_memories_post Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_memories_post" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfMemoriesPost"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda["self_memories_plan_id_post"].function_name
+  function_name = aws_lambda_function.lambda["self_memories_post"].function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/POST/self/memories/*"
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/POST/self/memories"
 }
 
-# self/memories/{planId} OPTIONS
-resource "aws_api_gateway_method" "self_memories_plan_id_options" {
+moved {
+  from = aws_api_gateway_resource.self_memories_plan_id
+  to   = aws_api_gateway_resource.self_memories_memory_id
+}
+
+moved {
+  from = aws_api_gateway_method.self_memories_plan_id_delete
+  to   = aws_api_gateway_method.self_memories_memory_id_delete
+}
+
+moved {
+  from = aws_api_gateway_integration.unimplemented_mock["self_memories_plan_id_delete"]
+  to   = aws_api_gateway_integration.self_memories_memory_id_delete_lambda
+}
+
+moved {
+  from = aws_api_gateway_method.self_memories_plan_id_options
+  to   = aws_api_gateway_method.self_memories_memory_id_options
+}
+
+moved {
+  from = aws_api_gateway_integration.self_memories_plan_id_options_lambda
+  to   = aws_api_gateway_integration.self_memories_memory_id_options_lambda
+}
+
+// self/memories/{memoryId}
+resource "aws_api_gateway_resource" "self_memories_memory_id" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.self_memories.id
+  path_part   = "{memoryId}"
+}
+
+// self/memories/{memoryId} DELETE
+resource "aws_api_gateway_method" "self_memories_memory_id_delete" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.self_memories_plan_id.id
+  resource_id   = aws_api_gateway_resource.self_memories_memory_id.id
+  http_method   = "DELETE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+# DELETE /self/memories/{memoryId}をself_memories_id_delete Lambdaへ接続
+resource "aws_api_gateway_integration" "self_memories_memory_id_delete_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.self_memories_memory_id.id
+  http_method = aws_api_gateway_method.self_memories_memory_id_delete.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda["self_memories_id_delete"].invoke_arn
+}
+
+# API Gatewayからself_memories_id_delete Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_memories_memory_id_delete" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfMemoriesMemoryIdDelete"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda["self_memories_id_delete"].function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/DELETE/self/memories/*"
+}
+
+# self/memories/{memoryId} OPTIONS
+resource "aws_api_gateway_method" "self_memories_memory_id_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.self_memories_memory_id.id
   http_method   = "OPTIONS"
   authorization = "NONE"
 }
 
-# OPTIONS self/memories/{planId}をself_memories_plan_id_post Lambdaへ接続
-resource "aws_api_gateway_integration" "self_memories_plan_id_options_lambda" {
+# OPTIONS /self/memories/{memoryId}をself_memories_id_delete Lambdaへ接続
+resource "aws_api_gateway_integration" "self_memories_memory_id_options_lambda" {
   rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.self_memories_plan_id.id
-  http_method = aws_api_gateway_method.self_memories_plan_id_options.http_method
+  resource_id = aws_api_gateway_resource.self_memories_memory_id.id
+  http_method = aws_api_gateway_method.self_memories_memory_id_options.http_method
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.lambda["self_memories_plan_id_post"].invoke_arn
+  uri                     = aws_lambda_function.lambda["self_memories_id_delete"].invoke_arn
 }
 
-# API GatewayのOPTIONSからself_memories_plan_id_post Lambdaを実行する権限
-resource "aws_lambda_permission" "allow_api_gateway_self_memories_plan_id_options" {
-  statement_id  = "AllowExecutionFromApiGatewaySelfMemoriesPlanIdOptions"
+# API GatewayのOPTIONSからself_memories_id_delete Lambdaを実行する権限
+resource "aws_lambda_permission" "allow_apigateway_self_memories_memory_id_options" {
+  statement_id  = "AllowExecutionFromApiGatewaySelfMemoriesMemoryIdOptions"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda["self_memories_plan_id_post"].function_name
+  function_name = aws_lambda_function.lambda["self_memories_id_delete"].function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/memories/*"
-}
 
-// self/memories/{planId} DELETE
-resource "aws_api_gateway_method" "self_memories_plan_id_delete" {
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.self_memories_plan_id.id
-  http_method   = "DELETE"
-  authorization = "COGNITO_USER_POOLS"
-  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  source_arn = "${aws_api_gateway_rest_api.main.execution_arn}/*/OPTIONS/self/memories/*"
 }
 
 # Lambdaが未実装のAPIメソッドを一時的にMOCK Integrationへ接続
@@ -1192,10 +1239,6 @@ locals {
     self_plans_id_favorites_delete = {
       resource_id = aws_api_gateway_resource.self_plans_id_favorites.id
       http_method = aws_api_gateway_method.self_plans_id_favorites_delete.http_method
-    }
-    self_memories_plan_id_delete = {
-      resource_id = aws_api_gateway_resource.self_memories_plan_id.id
-      http_method = aws_api_gateway_method.self_memories_plan_id_delete.http_method
     }
   }
 }
@@ -1266,10 +1309,12 @@ resource "aws_api_gateway_deployment" "current" {
         aws_api_gateway_integration.self_images_upload_url_post_lambda.id,
         aws_api_gateway_method.self_images_upload_url_options.id,
         aws_api_gateway_integration.self_images_upload_url_options_lambda.id,
-        aws_api_gateway_method.self_memories_plan_id_post.id,
-        aws_api_gateway_integration.self_memories_plan_id_post_lambda.id,
-        aws_api_gateway_method.self_memories_plan_id_options.id,
-        aws_api_gateway_integration.self_memories_plan_id_options_lambda.id,
+        aws_api_gateway_method.self_memories_post.id,
+        aws_api_gateway_integration.self_memories_post_lambda.id,
+        aws_api_gateway_method.self_memories_memory_id_delete.id,
+        aws_api_gateway_integration.self_memories_memory_id_delete_lambda.id,
+        aws_api_gateway_method.self_memories_memory_id_options.id,
+        aws_api_gateway_integration.self_memories_memory_id_options_lambda.id,
         aws_api_gateway_method.self_plans_id_favorites_post.id,
         aws_api_gateway_integration.self_plans_id_favorites_post_lambda.id,
         aws_api_gateway_method.self_plans_id_favorites_options.id,
@@ -1336,8 +1381,9 @@ resource "aws_api_gateway_deployment" "current" {
     aws_api_gateway_integration.self_plans_options_lambda,
     aws_api_gateway_integration.self_images_upload_url_post_lambda,
     aws_api_gateway_integration.self_images_upload_url_options_lambda,
-    aws_api_gateway_integration.self_memories_plan_id_post_lambda,
-    aws_api_gateway_integration.self_memories_plan_id_options_lambda,
+    aws_api_gateway_integration.self_memories_post_lambda,
+    aws_api_gateway_integration.self_memories_memory_id_delete_lambda,
+    aws_api_gateway_integration.self_memories_memory_id_options_lambda,
     aws_api_gateway_integration.self_plans_id_favorites_post_lambda,
     aws_api_gateway_integration.self_plans_id_favorites_options_lambda,
     aws_api_gateway_integration.plans_get_lambda,

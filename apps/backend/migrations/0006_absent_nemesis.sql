@@ -1,0 +1,2 @@
+ALTER TABLE "prefecture_plans" ALTER COLUMN "plan_id" DROP NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "prefecture_plans_user_id_prefecture_id_unlinked_unique" ON "prefecture_plans" USING btree ("user_id","prefecture_id") WHERE "prefecture_plans"."plan_id" IS NULL;

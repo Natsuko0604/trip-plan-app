@@ -1,7 +1,7 @@
-// 地図作成
+// 旅行記録の作成
 
 import { APIGatewayProxyHandler } from "aws-lambda";
-import { memoryPlanPostSchema, planIdPathSchema } from "@tripla/validation";
+import { memoryPlanPostSchema } from "@tripla/validation";
 import { CORS, response } from "../lib/cors";
 import { getDb } from "../db";
 import { plans, prefecturePlans, prefectures, users } from "../db/schema";
@@ -46,7 +46,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   }
 
-  const { name } = parsedRequest.data;
+  const { planId, name } = parsedRequest.data;
 
   try {
     // DB接続を取得
@@ -76,32 +76,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
-    // URLのidから、そのユーザー所有のplansを検索
-    const parsedPath = planIdPathSchema.safeParse(event.pathParameters);
-    if (!parsedPath.success) {
-      return response(400, {
-        message: event.pathParameters?.planId
-          ? "旅行計画IDの形式が正しくありません"
-          : "旅行計画IDがありません",
-      });
-    }
-    const { planId } = parsedPath.data;
+    const [plan] = planId
+      ? await db
+          .select({
+            id: plans.id,
+          })
+          .from(plans)
+          .where(
+            and(
+              eq(plans.id, planId),
+              eq(plans.userId, user.id),
+              isNull(plans.deletedAt),
+            ),
+          )
+          .limit(1)
+      : [null];
 
-    const [plan] = await db
-      .select({
-        id: plans.id,
-      })
-      .from(plans)
-      .where(
-        and(
-          eq(plans.id, planId),
-          eq(plans.userId, user.id),
-          isNull(plans.deletedAt),
-        ),
-      )
-      .limit(1);
-
-    if (!plan) {
+    if (planId && !plan) {
       return response(404, {
         message: "このアカウントの旅行計画はありません",
       });
@@ -127,12 +118,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       .values({
         userId: user.id,
         prefectureId: prefecture.id,
-        planId: plan.id,
+        planId: plan?.id ?? null,
         isCompleted: true,
       })
-      .onConflictDoNothing({
-        target: [prefecturePlans.planId, prefecturePlans.prefectureId],
-      })
+      .onConflictDoNothing()
       .returning();
     if (!prefecturePlan) {
       return response(409, {
