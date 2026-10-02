@@ -8,11 +8,11 @@ export default function SignupPage() {
       imageAlt="アプリアイコンを表示できませんでした"
       title="アカウントを作成しましょう"
       description={
-        <>
+        <p>
           以下の項目を入力する、
           <br />
           またはソーシャルアカウントを登録してください
-        </>
+        </p>
       }
       alternateText="アカウントをお持ちの方はこちら"
       alternateHref="/login"

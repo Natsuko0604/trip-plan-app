@@ -2,10 +2,21 @@
 
 import type { SubmitEvent } from "react";
 import { PasswordField, TextField } from "./auth-fields";
+import { signupPost } from "../api/signup";
 
 export function SignupForm() {
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
+  // 会員登録用のAPIを呼び出す
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    try {
+      event.preventDefault(); // フォーム送信によるページの再読み込みを防ぐ
+      const formData = new FormData(event.currentTarget); // 送信されたフォームの入力値を取得
+      const email = formData.get("email");
+      const password = formData.get("password");
+      if (typeof email !== "string" || typeof password !== "string") return;
+      await signupPost({ email, password });
+    } catch (e) {
+      console.error(e, "API送信に失敗しました");
+    }
   }
 
   return (
