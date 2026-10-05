@@ -1,11 +1,21 @@
 "use client";
 
+import "@/lib/amplify";
 import type { SubmitEvent } from "react";
 import { PasswordField, TextField } from "./auth-fields";
+import { signIn } from "aws-amplify/auth";
 
 export function LoginForm() {
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email");
+    const password = formData.get("password");
+    if (typeof email !== "string" || typeof password !== "string") return;
+    await signIn({
+      username: email,
+      password: password,
+    });
   }
 
   return (
