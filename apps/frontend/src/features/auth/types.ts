@@ -24,3 +24,8 @@ export type AuthPageShellProps = {
   alternateLabel: string;
   children: ReactNode;
 };
+
+// エラーメッセージ用の型
+export type ErrorMessageProps = {
+  message: string;
+};
