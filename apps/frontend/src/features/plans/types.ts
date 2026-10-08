@@ -11,6 +11,7 @@ export type Restaurant = NonNullable<SelfPlanPostInput["restaurants"]>[number];
 export type RestaurantImage = NonNullable<
   SelfPlanPostInput["restaurantImages"]
 >[number];
+export type Tag = NonNullable<SelfPlanPostInput["tags"]>[number];
 export type TouringSpot = NonNullable<
   SelfPlanPostInput["touringSpots"]
 >[number];
@@ -26,4 +27,10 @@ export type SectionButtonProps = {
   icon: LucideIcon;
   label: string;
   wide?: boolean;
+};
+
+export type PendingMemoryImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
 };

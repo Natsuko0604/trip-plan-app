@@ -1,3 +1,4 @@
+// 旅行計画作成フォーム
 "use client";
 
 import Image from "next/image";
@@ -13,9 +14,11 @@ import type {
   Hotel,
   HotelImage,
   PackingItem,
+  PendingMemoryImage,
   Restaurant,
   RestaurantImage,
   SectionButtonProps,
+  Tag,
   TouringSpot,
   TouringSpotImage,
 } from "../types";
@@ -37,12 +40,6 @@ const allowedMemoryImageTypes = new Set([
   "image/webp",
 ]);
 const maxMemoryImageSizeBytes = 5 * 1024 * 1024;
-
-type PendingMemoryImage = {
-  id: string;
-  file: File;
-  previewUrl: string;
-};
 
 function SectionButton({
   icon: Icon,
@@ -72,6 +69,7 @@ export function PlanForm() {
   const [memoryImageError, setMemoryImageError] = useState("");
   const [restaurants] = useState<Restaurant[]>([]);
   const [restaurantImages] = useState<RestaurantImage[]>([]);
+  const [tags] = useState<Tag[]>([]);
   const [touringSpots] = useState<TouringSpot[]>([]);
   const [touringSpotImages] = useState<TouringSpotImage[]>([]);
   const [packingItems] = useState<PackingItem[]>([]);
@@ -334,7 +332,11 @@ export function PlanForm() {
             思い出の写真
           </h2>
           <label className="flex min-h-20 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-white px-4 text-neutral-500 transition hover:border-[#8fc1bd] hover:bg-[#f4faf9] hover:text-[#6ca9a4] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#70aaa5]">
-            <ImagePlus aria-hidden="true" className="size-6" strokeWidth={1.75} />
+            <ImagePlus
+              aria-hidden="true"
+              className="size-6"
+              strokeWidth={1.75}
+            />
             <span>思い出の写真を追加する</span>
             <input
               type="file"
