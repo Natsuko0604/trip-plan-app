@@ -9,20 +9,20 @@ import type {
   PackingItem,
   Restaurant,
   RestaurantImage,
+  SectionButtonProps,
   TouringSpot,
   TouringSpotImage,
 } from "../types";
+import { Bed, Luggage, MapPin, Timeline, Utensils } from "lucide-react";
 
 const inputClassName =
   "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-[#7eb9b4] focus:ring-2 focus:ring-[#7eb9b4]/20";
 
-type SectionButtonProps = {
-  symbol: string;
-  label: string;
-  wide?: boolean;
-};
-
-function SectionButton({ symbol, label, wide = false }: SectionButtonProps) {
+function SectionButton({
+  icon: Icon,
+  label,
+  wide = false,
+}: SectionButtonProps) {
   return (
     <button
       type="button"
@@ -30,9 +30,7 @@ function SectionButton({ symbol, label, wide = false }: SectionButtonProps) {
         wide ? "col-span-3 min-h-14 flex-row py-3" : ""
       }`}
     >
-      <span aria-hidden="true" className="text-3xl leading-none">
-        {symbol}
-      </span>
+      <Icon className="size-8" strokeWidth={1.75} />
       <span className="font-semibold">{label}</span>
     </button>
   );
@@ -178,11 +176,11 @@ export function PlanForm() {
             スケジュール
           </h2>
           <div className="grid grid-cols-3 gap-2.5">
-            <SectionButton symbol="☷" label="タイムライン" wide />
-            <SectionButton symbol="▱" label="宿泊場所" />
-            <SectionButton symbol="⌖" label="観光地" />
-            <SectionButton symbol="♨" label="飲食店" />
-            <SectionButton symbol="▣" label="持ち物" wide />
+            <SectionButton icon={Timeline} label="タイムライン" wide />
+            <SectionButton icon={Bed} label="宿泊場所" />
+            <SectionButton icon={MapPin} label="観光地" />
+            <SectionButton icon={Utensils} label="飲食店" />
+            <SectionButton icon={Luggage} label="持ち物" wide />
           </div>
         </section>
 
