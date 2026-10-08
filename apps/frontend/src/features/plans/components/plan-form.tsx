@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, type SubmitEvent } from "react";
+import Image from "next/image";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type SubmitEvent,
+} from "react";
 import type {
   Cost,
   Hotel,
   HotelImage,
-  MemoryImage,
   PackingItem,
   Restaurant,
   RestaurantImage,
@@ -13,10 +19,30 @@ import type {
   TouringSpot,
   TouringSpotImage,
 } from "../types";
-import { Bed, Luggage, MapPin, Timeline, Utensils } from "lucide-react";
+import {
+  Bed,
+  ImagePlus,
+  Luggage,
+  MapPin,
+  Timeline,
+  Trash2,
+  Utensils,
+} from "lucide-react";
 
 const inputClassName =
   "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-[#7eb9b4] focus:ring-2 focus:ring-[#7eb9b4]/20";
+const allowedMemoryImageTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const maxMemoryImageSizeBytes = 5 * 1024 * 1024;
+
+type PendingMemoryImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
 
 function SectionButton({
   icon: Icon,
@@ -40,12 +66,103 @@ export function PlanForm() {
   const [costs] = useState<Cost[]>([]);
   const [hotels] = useState<Hotel[]>([]);
   const [hotelImages] = useState<HotelImage[]>([]);
-  const [memoryImages] = useState<MemoryImage[]>([]);
+  const [pendingMemoryImages, setPendingMemoryImages] = useState<
+    PendingMemoryImage[]
+  >([]);
+  const [memoryImageError, setMemoryImageError] = useState("");
   const [restaurants] = useState<Restaurant[]>([]);
   const [restaurantImages] = useState<RestaurantImage[]>([]);
   const [touringSpots] = useState<TouringSpot[]>([]);
   const [touringSpotImages] = useState<TouringSpotImage[]>([]);
   const [packingItems] = useState<PackingItem[]>([]);
+  const memoryImagePreviewUrls = useRef(new Set<string>());
+
+  useEffect(() => {
+    const previewUrls = memoryImagePreviewUrls.current;
+
+    return () => {
+      previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+      previewUrls.clear();
+    };
+  }, []);
+
+  function validateMemoryImage(file: File) {
+    if (!allowedMemoryImageTypes.has(file.type)) {
+      return "JPEG、PNG、WebP形式の画像を選択してください";
+    }
+    if (file.size === 0) {
+      return "空の画像ファイルは追加できません";
+    }
+    if (file.size > maxMemoryImageSizeBytes) {
+      return "画像は1枚5MB以下にしてください";
+    }
+    return null;
+  }
+
+  function handleMemoryImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const selectedFiles = Array.from(input.files ?? []);
+    input.value = "";
+
+    if (!selectedFiles.length) {
+      return;
+    }
+
+    const validImages: PendingMemoryImage[] = [];
+    const validationErrors: string[] = [];
+
+    selectedFiles.forEach((file) => {
+      if (!(file instanceof File)) {
+        validationErrors.push("画像ファイルを選択してください");
+        return;
+      }
+
+      const validationError = validateMemoryImage(file);
+      if (validationError) {
+        validationErrors.push(`${file.name}: ${validationError}`);
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      memoryImagePreviewUrls.current.add(previewUrl);
+      validImages.push({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl,
+      });
+    });
+
+    if (validImages.length) {
+      setPendingMemoryImages((currentImages) => [
+        ...currentImages,
+        ...validImages,
+      ]);
+    }
+
+    setMemoryImageError(
+      validationErrors.length
+        ? `${validationErrors[0]}${
+            validationErrors.length > 1
+              ? `（ほか${validationErrors.length - 1}件）`
+              : ""
+          }`
+        : "",
+    );
+  }
+
+  function handleMemoryImageRemove(imageId: string) {
+    const targetImage = pendingMemoryImages.find(
+      (image) => image.id === imageId,
+    );
+    if (targetImage) {
+      URL.revokeObjectURL(targetImage.previewUrl);
+      memoryImagePreviewUrls.current.delete(targetImage.previewUrl);
+    }
+    setPendingMemoryImages((currentImages) =>
+      currentImages.filter((image) => image.id !== imageId),
+    );
+    setMemoryImageError("");
+  }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -211,6 +328,65 @@ export function PlanForm() {
             className="w-full resize-y rounded-xl border border-neutral-300 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-[#7eb9b4] focus:ring-2 focus:ring-[#7eb9b4]/20"
           />
         </div>
+
+        <section aria-labelledby="memory-images-heading">
+          <h2 id="memory-images-heading" className="mb-2 font-bold">
+            思い出の写真
+          </h2>
+          <label className="flex min-h-20 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-white px-4 text-neutral-500 transition hover:border-[#8fc1bd] hover:bg-[#f4faf9] hover:text-[#6ca9a4] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#70aaa5]">
+            <ImagePlus aria-hidden="true" className="size-6" strokeWidth={1.75} />
+            <span>思い出の写真を追加する</span>
+            <input
+              type="file"
+              name="memoryImageFiles"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={handleMemoryImageChange}
+              aria-describedby={
+                memoryImageError ? "memory-images-error" : undefined
+              }
+              className="sr-only"
+            />
+          </label>
+
+          {memoryImageError && (
+            <p
+              id="memory-images-error"
+              role="alert"
+              className="mt-2 text-sm text-red-600"
+            >
+              {memoryImageError}
+            </p>
+          )}
+
+          {pendingMemoryImages.length > 0 && (
+            <ul className="mt-3 grid grid-cols-3 gap-2.5">
+              {pendingMemoryImages.map((image) => (
+                <li
+                  key={image.id}
+                  className="group relative aspect-square overflow-hidden rounded-xl bg-neutral-100"
+                >
+                  <Image
+                    src={image.previewUrl}
+                    alt={image.file.name}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 640px) 30vw, 160px"
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleMemoryImageRemove(image.id)}
+                    aria-label={`${image.file.name}を削除`}
+                    className="absolute right-1.5 top-1.5 flex size-8 items-center justify-center rounded-full bg-black/65 text-white transition hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <fieldset>
           <legend className="mb-2 font-bold">公開設定</legend>
