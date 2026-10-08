@@ -127,6 +127,8 @@ export const hotelSchema = z.object({
   dinnerEndedAt: nullableTime,
   breakfastStartedTime: nullableTime,
   breakfastEndedTime: nullableTime,
+  bathStartedAt: nullableTime,
+  bathEndedAt: nullableTime,
   notes: nullableString(),
 });
 

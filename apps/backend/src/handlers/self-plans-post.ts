@@ -261,6 +261,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               dinnerEndedAt: item.dinnerEndedAt,
               breakfastStartedAt: item.breakfastStartedTime,
               breakfastEndedAt: item.breakfastEndedTime,
+              bathStartedAt: item.bathStartedAt,
+              bathEndedAt: item.bathEndedAt,
               notes: item.notes,
             })),
           )
