@@ -1,5 +1,6 @@
 // 旅行計画新規作成(POST)用の self/plans 呼び出す関数
 
+import { authenticatedFetch } from "@/lib/auth-fetch";
 import { SelfPlanPostInput } from "@tripla/validation";
 
 export const plansPost = async (data: SelfPlanPostInput) => {
@@ -9,7 +10,7 @@ export const plansPost = async (data: SelfPlanPostInput) => {
   }
   const url = `${APIBASEURL}/self/plans`;
   try {
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

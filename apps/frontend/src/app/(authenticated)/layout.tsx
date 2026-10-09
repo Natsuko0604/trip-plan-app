@@ -1,4 +1,4 @@
-// 認証チェック
+// ログインに対する認証チェック
 "use client";
 
 import "@/lib/amplify";
