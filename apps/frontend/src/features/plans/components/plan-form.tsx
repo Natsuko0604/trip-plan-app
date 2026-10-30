@@ -31,6 +31,7 @@ import {
   Trash2,
   Utensils,
 } from "lucide-react";
+import { plansPost } from "../api/plan";
 
 const inputClassName =
   "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-[#7eb9b4] focus:ring-2 focus:ring-[#7eb9b4]/20";
@@ -162,7 +163,7 @@ export function PlanForm() {
     setMemoryImageError("");
   }
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
@@ -188,6 +189,18 @@ export function PlanForm() {
     ) {
       return;
     }
+    const imageUrl = {
+      coverImage: coverImage,
+    };
+    const planData = {
+      title: title,
+      startedAt: startedAt,
+      endedAt: endedAt,
+      comment: comment,
+      isPublic: isPublic === "true",
+      imageUrl: null,
+    };
+    await plansPost(planData);
   }
 
   return (

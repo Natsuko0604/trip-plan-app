@@ -52,3 +52,6 @@ apps/backend/dist/lambda/*
 
 # frontend
 apps/frontend/.next
+
+# Vitest reports and artifacts
+.vitest/
