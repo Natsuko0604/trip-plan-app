@@ -1,5 +1,8 @@
 "use client";
 
+import "@/lib/amplify";
+import { signIn } from "aws-amplify/auth";
+import { useRouter } from "next/navigation";
 import type { SubmitEvent } from "react";
 import { useState } from "react";
 import { signupPostSchema } from "@tripla/validation";
@@ -13,6 +16,8 @@ type SignupFormErrors = {
 
 export function SignupForm() {
   const [errors, setErrors] = useState<SignupFormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   // 会員登録用のAPIを呼び出す
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -39,9 +44,23 @@ export function SignupForm() {
       }
 
       setErrors({});
+      setIsLoading(true);
       await signupPost(result.data);
+      const signInResult = await signIn({
+        username: result.data.email,
+        password: result.data.password,
+      });
+
+      if (signInResult.isSignedIn) {
+        router.replace("/plans");
+        return;
+      }
+
+      throw new Error("自動ログインを完了できませんでした");
     } catch (e) {
-      console.error(e, "API送信に失敗しました");
+      console.error(e, "会員登録または自動ログインに失敗しました");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -91,8 +110,9 @@ export function SignupForm() {
       <button
         type="submit"
         className="mt-2 h-14 w-full rounded-xl border border-neutral-800 bg-[#a9cfcb] text-lg font-bold text-white transition hover:bg-[#98c5c0] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6aa7a1]"
+        disabled={isLoading}
       >
-        登録する
+        {isLoading ? "登録中..." : "登録する"}
       </button>
     </form>
   );

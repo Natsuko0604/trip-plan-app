@@ -60,14 +60,17 @@ export const signupPostSchema = z.object({
     .string({ message: "メールアドレスは入力必須です" })
     .trim()
     .min(1, { message: "メールアドレスは入力必須です" })
-    .max(254, { message: "メールアドレスの形式が正しくありません" })
+    .max(254, { message: "メールアドレスは254文字以内で入力してください" })
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
       message: "メールアドレスの形式が正しくありません",
     })
     .transform((email) => email.toLowerCase()),
   password: z
     .string({ message: "パスワードは入力必須です" })
-    .min(1, { message: "パスワードは入力必須です" }),
+    .min(1, { message: "パスワードは入力必須です" })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, {
+      message: "パスワードは8文字以上で、大文字・小文字・数字を含めてください",
+    }),
 });
 
 export const selfPutSchema = z.object({
