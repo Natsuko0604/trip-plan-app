@@ -1,10 +1,19 @@
 "use client";
 
 import type { SubmitEvent } from "react";
+import { useState } from "react";
+import { signupPostSchema } from "@tripla/validation";
 import { PasswordField, TextField } from "./auth-fields";
 import { signupPost } from "../api/signup";
 
+type SignupFormErrors = {
+  email?: string;
+  password?: string;
+};
+
 export function SignupForm() {
+  const [errors, setErrors] = useState<SignupFormErrors>({});
+
   // 会員登録用のAPIを呼び出す
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     try {
@@ -13,21 +22,56 @@ export function SignupForm() {
       const email = formData.get("email");
       const password = formData.get("password");
       if (typeof email !== "string" || typeof password !== "string") return;
-      await signupPost({ email, password });
+      const result = signupPostSchema.safeParse({
+        email,
+        password,
+      });
+
+      if (!result.success) {
+        const fieldErrors = result.error.flatten().fieldErrors;
+
+        setErrors({
+          email: fieldErrors.email?.[0],
+          password: fieldErrors.password?.[0],
+        });
+
+        return;
+      }
+
+      setErrors({});
+      await signupPost(result.data);
     } catch (e) {
       console.error(e, "API送信に失敗しました");
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <TextField
         label="メールアドレス"
         name="email"
         type="email"
         autoComplete="email"
+        required
+        errorMessage={errors.email}
+        onChange={() => {
+          setErrors((current) => ({
+            ...current,
+            email: undefined,
+          }));
+        }}
       />
-      <PasswordField autoComplete="new-password" />
+      <PasswordField
+        autoComplete="new-password"
+        required
+        errorMessage={errors.password}
+        onChange={() => {
+          setErrors((current) => ({
+            ...current,
+            password: undefined,
+          }));
+        }}
+      />
       <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-neutral-500 sm:text-base">
         <input
           type="checkbox"

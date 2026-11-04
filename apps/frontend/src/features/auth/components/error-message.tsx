@@ -1,9 +1,8 @@
-import { ErrorMessageProps } from "../types";
+import type { ErrorMessageProps } from "../types";
 
-// エラー文言
-export function ErrorMessage({ message }: ErrorMessageProps) {
+export function ErrorMessage({ id, message }: ErrorMessageProps) {
   return (
-    <p className="text-red-600 text-sm mt-2" role="alert">
+    <p id={id} className="mt-2 text-sm text-red-600" role="alert">
       {message}
     </p>
   );

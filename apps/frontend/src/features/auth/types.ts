@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ChangeEventHandler, ReactNode } from "react";
 
 // 汎用的な文字入力
 export type TextFieldProps = {
@@ -6,11 +6,17 @@ export type TextFieldProps = {
   name: string;
   type?: "email" | "text";
   autoComplete: string;
+  required?: boolean;
+  errorMessage?: string;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
 };
 
 // 既存・新規パスワード
 export type PasswordFieldProps = {
   autoComplete: "current-password" | "new-password";
+  required?: boolean;
+  errorMessage?: string;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
 };
 
 // ログイン・会員登録ページの共通点
@@ -27,5 +33,6 @@ export type AuthPageShellProps = {
 
 // エラーメッセージ用の型
 export type ErrorMessageProps = {
+  id?: string;
   message: string;
 };

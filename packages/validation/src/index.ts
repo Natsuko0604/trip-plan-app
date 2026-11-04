@@ -57,17 +57,17 @@ export const planIdPathSchema = z.object({
 
 export const signupPostSchema = z.object({
   email: z
-    .string({ message: "emailとpasswordは必須です" })
+    .string({ message: "メールアドレスは入力必須です" })
     .trim()
-    .min(1, { message: "emailとpasswordは必須です" })
+    .min(1, { message: "メールアドレスは入力必須です" })
     .max(254, { message: "メールアドレスの形式が正しくありません" })
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
       message: "メールアドレスの形式が正しくありません",
     })
     .transform((email) => email.toLowerCase()),
   password: z
-    .string({ message: "emailとpasswordは必須です" })
-    .min(1, { message: "emailとpasswordは必須です" }),
+    .string({ message: "パスワードは入力必須です" })
+    .min(1, { message: "パスワードは入力必須です" }),
 });
 
 export const selfPutSchema = z.object({
@@ -305,12 +305,7 @@ export const touringSpotPutSchema = z
 
     data.touringSpotImages.forEach((image, index) => {
       if (!touringSpotIds.has(image.touringSpotId)) {
-        addReferenceIssue(
-          context,
-          "touringSpotImages",
-          index,
-          "touringSpotId",
-        );
+        addReferenceIssue(context, "touringSpotImages", index, "touringSpotId");
       }
     });
   });

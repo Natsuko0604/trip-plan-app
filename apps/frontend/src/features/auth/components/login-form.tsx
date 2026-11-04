@@ -49,12 +49,6 @@ export function LoginForm() {
       />
       <div>
         <PasswordField autoComplete="current-password" />
-        <button
-          type="button"
-          className="ml-auto mt-2 block text-sm text-neutral-500 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8bbfba]"
-        >
-          パスワードお忘れの方はこちら
-        </button>
       </div>
       {errorMessage && <ErrorMessage message={errorMessage} />}
       <button
