@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useId, useState } from "react";
 import { PasswordFieldProps, TextFieldProps } from "../types";
 import { ErrorMessage } from "./error-message";
+import { Eye, EyeOff } from "lucide-react";
 
 export function TextField({
   label,
@@ -78,18 +78,13 @@ export function PasswordField({
             isVisible ? "パスワードを非表示にする" : "パスワードを表示する"
           }
           aria-pressed={isVisible}
-          className="absolute inset-y-0 right-2 flex w-11 items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#8bbfba]"
+          className="absolute inset-y-0 right-2 flex w-11 items-center justify-center rounded-lg text-neutral-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#8bbfba]"
         >
-          <Image
-            src={
-              isVisible
-                ? "/images/auth/visibility.svg"
-                : "/images/auth/visibility-off.svg"
-            }
-            alt=""
-            width={24}
-            height={24}
-          />
+          {isVisible ? (
+            <EyeOff strokeWidth={1.75} />
+          ) : (
+            <Eye strokeWidth={1.75} />
+          )}
         </button>
       </div>
       {errorMessage && <ErrorMessage id={errorId} message={errorMessage} />}
