@@ -46,7 +46,12 @@ export function AuthPageShell({
           aria-label="Googleで続ける"
           className="mt-7 rounded-full p-2 transition hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8bbfba]"
         >
-          <Image src="/images/auth/google.svg" alt="" width={34} height={34} />
+          <Image
+            src="/images/auth/google-light.svg"
+            alt=""
+            width={48}
+            height={48}
+          />
         </button>
 
         <p className="mt-8 text-center text-sm leading-6 text-neutral-500 sm:mt-10 sm:text-base">
