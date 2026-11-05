@@ -71,6 +71,9 @@ export const signupPostSchema = z.object({
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, {
       message: "パスワードは8文字以上で、大文字・小文字・数字を含めてください",
     }),
+  privacyAccepted: z.literal(true, {
+    error: "プライバシーポリシーへの同意が必要です",
+  }),
 });
 
 export const selfPutSchema = z.object({

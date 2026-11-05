@@ -38,6 +38,12 @@ const setup = () => {
 
   const emailInput = screen.getByLabelText("メールアドレス");
   const passwordInput = screen.getByLabelText("パスワード");
+  const passwordVisibilityButton = screen.getByRole("button", {
+    name: "パスワードを表示する",
+  });
+  const privacyPolicyCheckBox = screen.getByRole("checkbox", {
+    name: /プライバシーポリシーに同意しますか/,
+  });
   const submitButton = screen.getByRole("button", {
     name: "登録する",
   });
@@ -46,6 +52,8 @@ const setup = () => {
     user,
     emailInput,
     passwordInput,
+    passwordVisibilityButton,
+    privacyPolicyCheckBox,
     submitButton,
   };
 };
@@ -67,14 +75,22 @@ describe("入力バリデーションが正しい", () => {
   });
 
   test("メールアドレスを小文字へ変換して登録APIへ渡し、登録処理を呼ぶ", async () => {
-    const { user, emailInput, passwordInput, submitButton } = setup();
+    const {
+      user,
+      emailInput,
+      passwordInput,
+      privacyPolicyCheckBox,
+      submitButton,
+    } = setup();
     await user.type(emailInput, "Test@Example.com");
     await user.type(passwordInput, "PasswordTest123!");
+    await user.click(privacyPolicyCheckBox);
     await user.click(submitButton);
 
     expect(signupPostMock).toHaveBeenCalledWith({
       email: "test@example.com",
       password: "PasswordTest123!",
+      privacyAccepted: true,
     });
   });
 
@@ -155,9 +171,16 @@ describe("登録フォームが正しい", () => {
   test("登録処理中はボタンが無効になる", async () => {
     signupPostMock.mockReturnValue(new Promise(() => {}));
 
-    const { user, emailInput, passwordInput, submitButton } = setup();
+    const {
+      user,
+      emailInput,
+      passwordInput,
+      privacyPolicyCheckBox,
+      submitButton,
+    } = setup();
     await user.type(emailInput, "Test@Example.com");
     await user.type(passwordInput, "PasswordTest123!");
+    await user.click(privacyPolicyCheckBox);
     await user.click(submitButton);
 
     expect(submitButton).toBeDisabled();
@@ -166,9 +189,16 @@ describe("登録フォームが正しい", () => {
   test("登録ボタンを連続クリックしても二重送信されない", async () => {
     signupPostMock.mockReturnValue(new Promise(() => {}));
 
-    const { user, emailInput, passwordInput, submitButton } = setup();
+    const {
+      user,
+      emailInput,
+      passwordInput,
+      privacyPolicyCheckBox,
+      submitButton,
+    } = setup();
     await user.type(emailInput, "Test@Example.com");
     await user.type(passwordInput, "PasswordTest123!");
+    await user.click(privacyPolicyCheckBox);
     await user.click(submitButton);
 
     expect(submitButton).toBeDisabled();
@@ -187,9 +217,16 @@ describe("登録フォームが正しい", () => {
       },
     });
 
-    const { user, emailInput, passwordInput, submitButton } = setup();
+    const {
+      user,
+      emailInput,
+      passwordInput,
+      privacyPolicyCheckBox,
+      submitButton,
+    } = setup();
     await user.type(emailInput, "Test@Example.com");
     await user.type(passwordInput, "PasswordTest123!");
+    await user.click(privacyPolicyCheckBox);
     await user.click(submitButton);
     await waitFor(() => {
       expect(signInMock).toHaveBeenCalledWith({
@@ -199,5 +236,43 @@ describe("登録フォームが正しい", () => {
 
       expect(replaceMock).toHaveBeenCalledWith("/plans");
     });
+  });
+
+  test("登録APIが失敗した場合にエラーメッセージを表示する", async () => {
+    signupPostMock.mockRejectedValue(new Error("ユーザー登録に失敗しました"));
+
+    const {
+      user,
+      emailInput,
+      passwordInput,
+      privacyPolicyCheckBox,
+      submitButton,
+    } = setup();
+    await user.type(emailInput, "test@example.com");
+    await user.type(passwordInput, "PasswordTest123!");
+    await user.click(privacyPolicyCheckBox);
+    await user.click(submitButton);
+
+    expect(
+      await screen.findByText("ユーザー登録に失敗しました"),
+    ).toBeInTheDocument();
+  });
+
+  test("パスワードを表示・非表示に切り替えられる", async () => {
+    const { user, passwordInput, passwordVisibilityButton } = setup();
+    await user.type(passwordInput, "PasswordTest123!");
+    await user.click(passwordVisibilityButton);
+    expect(passwordInput).toHaveAttribute("type", "text");
+    await user.click(passwordVisibilityButton);
+    expect(passwordInput).toHaveAttribute("type", "password");
+  });
+
+  test("プライバシーポリシーへの同意を必須仕様にする場合、未同意では送信されない", async () => {
+    const { user, emailInput, passwordInput, submitButton } = setup();
+    await user.type(emailInput, "test@example.com");
+    await user.type(passwordInput, "PasswordTest123!");
+    await user.click(submitButton);
+
+    expect(await screen.findByText("プライバシーポリシーへの同意が必要です"));
   });
 });

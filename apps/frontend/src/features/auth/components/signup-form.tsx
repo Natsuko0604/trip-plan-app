@@ -8,15 +8,19 @@ import { useState } from "react";
 import { signupPostSchema } from "@tripla/validation";
 import { PasswordField, TextField } from "./auth-fields";
 import { signupPost } from "../api/signup";
+import { ErrorMessage } from "./error-message";
+import { z } from "zod";
 
 type SignupFormErrors = {
   email?: string;
   password?: string;
+  privacyAccepted?: string;
 };
 
 export function SignupForm() {
   const [errors, setErrors] = useState<SignupFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const router = useRouter();
 
   // 会員登録用のAPIを呼び出す
@@ -26,18 +30,21 @@ export function SignupForm() {
       const formData = new FormData(event.currentTarget); // 送信されたフォームの入力値を取得
       const email = formData.get("email");
       const password = formData.get("password");
+      const privacyAccepted = formData.get("privacyAccepted") === "on";
       if (typeof email !== "string" || typeof password !== "string") return;
       const result = signupPostSchema.safeParse({
         email,
         password,
+        privacyAccepted,
       });
 
       if (!result.success) {
-        const fieldErrors = result.error.flatten().fieldErrors;
+        const fieldErrors = z.flattenError(result.error).fieldErrors;
 
         setErrors({
           email: fieldErrors.email?.[0],
           password: fieldErrors.password?.[0],
+          privacyAccepted: fieldErrors.privacyAccepted?.[0],
         });
 
         return;
@@ -58,7 +65,10 @@ export function SignupForm() {
 
       throw new Error("自動ログインを完了できませんでした");
     } catch (e) {
-      console.error(e, "会員登録または自動ログインに失敗しました");
+      setSubmitError(
+        e instanceof Error ? e.message : "ユーザー登録に失敗しました",
+      );
+      console.error(e);
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +106,7 @@ export function SignupForm() {
           type="checkbox"
           name="privacyAccepted"
           className="mt-1 size-4 shrink-0 accent-[#83bbb5]"
+          required
         />
         <span>
           プライバシーポリシーに同意しますか{" "}
@@ -107,6 +118,10 @@ export function SignupForm() {
           </button>
         </span>
       </label>
+      {errors.privacyAccepted && (
+        <ErrorMessage message={errors.privacyAccepted} />
+      )}
+      {submitError && <ErrorMessage message={submitError} />}
       <button
         type="submit"
         className="mt-2 h-14 w-full rounded-xl border border-neutral-800 bg-[#a9cfcb] text-lg font-bold text-white transition hover:bg-[#98c5c0] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6aa7a1]"
