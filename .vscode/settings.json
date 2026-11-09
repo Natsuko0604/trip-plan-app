@@ -1,9 +1,11 @@
 {
     "cSpell.words": [
+        "ALLOWEDORIGIN",
         "APIBASEURL",
         "AWSURL",
         "COGNITOUSERPOOLCLIENTID",
         "COGNITOUSERPOOLID",
-        "tripla"
+        "tripla",
+        "unstub"
     ]
 }

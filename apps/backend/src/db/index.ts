@@ -13,6 +13,23 @@ const secretsManagerClient = new SecretsManagerClient({});
 let dbPromise: Promise<NodePgDatabase<typeof schema>> | undefined;
 
 async function createDb(): Promise<NodePgDatabase<typeof schema>> {
+  if (process.env.NODE_ENV === "test") {
+    const connectionString = process.env.TEST_DATABASE_URL;
+
+    if (!connectionString) {
+      throw new Error("TEST_DATABASE_URL が設定されていません");
+    }
+
+    const url = new URL(connectionString);
+    if (url.hostname !== "127.0.0.1" || url.pathname !== "/tripla_test") {
+      throw new Error(
+        "テスト用DBの接続先は 127.0.0.1 の tripla_test にしてください",
+      );
+    }
+
+    const pool = new Pool({ connectionString, ssl: false });
+    return drizzle(pool, { schema });
+  }
   const secretArn = process.env.DB_SECRET_ARN;
   const host = process.env.DB_HOST;
   const database = process.env.DB_NAME;

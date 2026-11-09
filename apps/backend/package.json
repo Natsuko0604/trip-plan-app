@@ -8,14 +8,15 @@
     "build:lambda:signup": "esbuild src/handlers/signup-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/signup-post.js",
     "build:lambda:self-plans": "esbuild src/handlers/self-plans-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/self-plans-post.js",
     "build:lambda:image-upload-url": "esbuild src/handlers/image-upload-url-post.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/lambda/image-upload-url-post.js",
-    "build:lambdas": "esbuild src/handlers/*.ts --bundle --platform=node --target=node24 --format=cjs --outdir=dist/lambda"
+    "build:lambdas": "esbuild src/handlers/*.ts --bundle --platform=node --target=node24 --format=cjs --outdir=dist/lambda",
+    "test": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs"
   },
   "dependencies": {
-    "@tripla/validation": "workspace:*",
     "@aws-sdk/client-cognito-identity-provider": "^3.1121.0",
     "@aws-sdk/client-s3": "^3.1127.0",
     "@aws-sdk/client-secrets-manager": "^3.1121.0",
     "@aws-sdk/s3-presigned-post": "^3.1127.0",
+    "@tripla/validation": "workspace:*",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.23.0"
@@ -26,6 +27,7 @@
     "@types/pg": "^8.21.0",
     "drizzle-kit": "^0.31.10",
     "esbuild": "^0.28.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }
