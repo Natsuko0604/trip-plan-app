@@ -6,6 +6,7 @@ import { PasswordField, TextField } from "./auth-fields";
 import { signIn } from "aws-amplify/auth";
 import { useRouter } from "next/navigation";
 import { ErrorMessage } from "./error-message";
+import { loginSchema } from "@tripla/validation";
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,16 +22,24 @@ export function LoginForm() {
       const email = formData.get("email");
       const password = formData.get("password");
       if (typeof email !== "string" || typeof password !== "string") return;
-      const result = await signIn({
-        username: email,
-        password: password,
+      const validationResult = loginSchema.safeParse({
+        email,
+        password,
       });
-      if (result.isSignedIn) {
+
+      if (!validationResult.success) {
+        return;
+      }
+      const signInResult = await signIn({
+        username: validationResult.data.email,
+        password: validationResult.data.password,
+      });
+      if (signInResult.isSignedIn) {
         router.replace("/plans");
         return;
       }
       setErrorMessage("ログインを完了するには追加の認証が必要です");
-      console.log(result.nextStep);
+      console.log(signInResult.nextStep);
     } catch (e) {
       setErrorMessage("メールアドレスまたはパスワードが正しくありません");
       console.error(e);
@@ -46,9 +55,10 @@ export function LoginForm() {
         name="email"
         type="email"
         autoComplete="email"
+        required
       />
       <div>
-        <PasswordField autoComplete="current-password" />
+        <PasswordField autoComplete="current-password" required />
       </div>
       {errorMessage && <ErrorMessage message={errorMessage} />}
       <button

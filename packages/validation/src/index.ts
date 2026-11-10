@@ -55,16 +55,20 @@ export const planIdPathSchema = z.object({
   planId: uuidSchema,
 });
 
+export const emailSchema = z
+  .string({ message: "メールアドレスは入力必須です" })
+  .trim()
+  .min(1, { message: "メールアドレスは入力必須です" })
+  .max(254, {
+    message: "メールアドレスは254文字以内で入力してください",
+  })
+  .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
+    message: "メールアドレスの形式が正しくありません",
+  })
+  .transform((email) => email.toLowerCase());
+
 export const signupPostSchema = z.object({
-  email: z
-    .string({ message: "メールアドレスは入力必須です" })
-    .trim()
-    .min(1, { message: "メールアドレスは入力必須です" })
-    .max(254, { message: "メールアドレスは254文字以内で入力してください" })
-    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
-      message: "メールアドレスの形式が正しくありません",
-    })
-    .transform((email) => email.toLowerCase()),
+  email: emailSchema,
   password: z
     .string({ message: "パスワードは入力必須です" })
     .min(1, { message: "パスワードは入力必須です" })
@@ -74,6 +78,13 @@ export const signupPostSchema = z.object({
   privacyAccepted: z.literal(true, {
     error: "プライバシーポリシーへの同意が必要です",
   }),
+});
+
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z
+    .string({ message: "パスワードは入力必須です" })
+    .min(1, { message: "パスワードは入力必須です" }),
 });
 
 export const selfPutSchema = z.object({
